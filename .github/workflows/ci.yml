@@ -12,26 +12,58 @@ env:
 jobs:
   fmt:
     name: Format Check
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Check formatting
         run: cargo fmt --all -- --check
 
   clippy:
-    name: Clippy
-    runs-on: macos-latest
+    name: Clippy (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwayland-dev \
+            libxkbcommon-x11-dev \
+            libvulkan-dev \
+            libgtk-3-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libasound2-dev
       - uses: Swatinem/rust-cache@v2
       - name: Run clippy
         run: cargo clippy --workspace -- -D warnings
 
   test:
-    name: Tests
-    runs-on: macos-latest
+    name: Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwayland-dev \
+            libxkbcommon-x11-dev \
+            libvulkan-dev \
+            libgtk-3-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libasound2-dev
       - uses: Swatinem/rust-cache@v2
       - name: Run tests
         run: cargo test --workspace
@@ -56,41 +88,45 @@ jobs:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
-            build_app: true
+            artifact_suffix: macos-arm64
           - os: macos-13
             target: x86_64-apple-darwin
-            build_app: true
+            artifact_suffix: macos-x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            build_app: false
+            artifact_suffix: linux-x64
     steps:
       - uses: actions/checkout@v4
-      - uses: Swatinem/rust-cache@v2
-        with:
-          key: ${{ matrix.target }}
       
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
+          sudo apt-get install -y \
+            libwayland-dev \
+            libxkbcommon-x11-dev \
+            libvulkan-dev \
+            libgtk-3-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libasound2-dev
       
-      - name: Build CLI
-        run: cargo build --release -p exactobar-cli
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
       
-      - name: Build App (macOS only)
-        if: matrix.build_app
-        run: cargo build --release -p exactobar-app
+      - name: Build workspace
+        run: cargo build --release --workspace
       
       - name: Upload CLI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: exactobar-cli-${{ matrix.target }}
+          name: exactobar-cli-${{ matrix.artifact_suffix }}
           path: target/release/exactobar
       
-      - name: Upload App artifact (macOS only)
-        if: matrix.build_app
+      - name: Upload App artifact
         uses: actions/upload-artifact@v4
         with:
-          name: exactobar-app-${{ matrix.target }}
+          name: exactobar-app-${{ matrix.artifact_suffix }}
           path: target/release/exactobar-app

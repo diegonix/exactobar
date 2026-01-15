@@ -18,15 +18,12 @@ jobs:
         include:
           - os: macos-latest
             target: aarch64-apple-darwin
-            build_app: true
             artifact_suffix: macos-arm64
           - os: macos-13
             target: x86_64-apple-darwin
-            build_app: true
             artifact_suffix: macos-x64
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            build_app: false
             artifact_suffix: linux-x64
     steps:
       - name: Checkout
@@ -46,26 +43,25 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libssl-dev pkg-config
+          sudo apt-get install -y \
+            libwayland-dev \
+            libxkbcommon-x11-dev \
+            libvulkan-dev \
+            libgtk-3-dev \
+            libxcb-render0-dev \
+            libxcb-shape0-dev \
+            libxcb-xfixes0-dev \
+            libasound2-dev
 
-      - name: Build CLI
-        run: cargo build --release -p exactobar-cli
-
-      - name: Build App (macOS only)
-        if: matrix.build_app
-        run: cargo build --release -p exactobar-app
+      - name: Build workspace
+        run: cargo build --release --workspace
 
       - name: Prepare artifacts
         run: |
           mkdir -p artifacts
           cp target/release/exactobar artifacts/exactobar-${{ matrix.artifact_suffix }}
-          chmod +x artifacts/*
-
-      - name: Add App to artifacts (macOS only)
-        if: matrix.build_app
-        run: |
           cp target/release/exactobar-app artifacts/exactobar-app-${{ matrix.artifact_suffix }}
-          chmod +x artifacts/exactobar-app-${{ matrix.artifact_suffix }}
+          chmod +x artifacts/*
 
       - name: Create tarball
         run: |
