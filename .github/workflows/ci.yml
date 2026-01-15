@@ -11,18 +11,10 @@ env:
 
 jobs:
   fmt:
-    name: Format
+    name: Format Check
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          components: rustfmt
-
+      - uses: actions/checkout@v4
       - name: Check formatting
         run: cargo fmt --all -- --check
 
@@ -30,40 +22,17 @@ jobs:
     name: Clippy
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          components: clippy
-
-      - name: Cache cargo registry and target
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-
-      - name: Run Clippy
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
+      - name: Run clippy
         run: cargo clippy --workspace -- -D warnings
 
   test:
-    name: Test
+    name: Tests
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-
-      - name: Cache cargo registry and target
-        uses: Swatinem/rust-cache@v2
-        with:
-          cache-on-failure: true
-
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
       - name: Run tests
         run: cargo test --workspace
 
@@ -78,22 +47,50 @@ jobs:
         run: cargo deny check
 
   build:
-    name: Build
-    runs-on: macos-latest
+    name: Build (${{ matrix.os }})
     needs: [security]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            build_app: true
+          - os: macos-13
+            target: x86_64-apple-darwin
+            build_app: true
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            build_app: false
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@master
+      - uses: actions/checkout@v4
+      - uses: Swatinem/rust-cache@v2
         with:
-          toolchain: stable
-
-      - name: Cache cargo registry and target
-        uses: Swatinem/rust-cache@v2
+          key: ${{ matrix.target }}
+      
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libssl-dev pkg-config
+      
+      - name: Build CLI
+        run: cargo build --release -p exactobar-cli
+      
+      - name: Build App (macOS only)
+        if: matrix.build_app
+        run: cargo build --release -p exactobar-app
+      
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
         with:
-          cache-on-failure: true
-
-      - name: Build release
-        run: cargo build --release --workspace
+          name: exactobar-cli-${{ matrix.target }}
+          path: target/release/exactobar
+      
+      - name: Upload App artifact (macOS only)
+        if: matrix.build_app
+        uses: actions/upload-artifact@v4
+        with:
+          name: exactobar-app-${{ matrix.target }}
+          path: target/release/exactobar-app
