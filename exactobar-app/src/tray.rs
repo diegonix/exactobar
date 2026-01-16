@@ -1431,25 +1431,22 @@ impl SystemTray {
 
         // Position menu near the click (tray icon location)
         let (origin_x, origin_y) = if let Some((click_x, click_y)) = click_pos {
-            // Get screen height to determine if tray is at top or bottom
-            let screen_height = cx.primary_display()
-                .map(|d| -> f32 { d.bounds().size.height.into() })
-                .unwrap_or(1080.0);
+            // Get screen dimensions
+            let (screen_width, screen_height) = cx.primary_display()
+                .map(|d| {
+                    let b = d.bounds();
+                    (f32::from(b.size.width), f32::from(b.size.height))
+                })
+                .unwrap_or((1920.0, 1080.0));
             
-            // Position menu to the left of click point
-            let x = (click_x as f32 - menu_width).max(10.0);
+            // Position menu to the left of click point, keeping on screen
+            let x = (click_x as f32 - menu_width).clamp(10.0, screen_width - menu_width - 10.0);
             
-            // If click is in bottom half of screen, position menu ABOVE the click
-            // Otherwise position it BELOW the click
-            let y = if (click_y as f32) > screen_height / 2.0 {
-                // Tray at bottom - menu goes above
-                ((click_y as f32) - menu_height - 10.0).max(10.0)
-            } else {
-                // Tray at top - menu goes below
-                (click_y as f32 + 30.0).min(screen_height - menu_height - 10.0)
-            };
+            // Position menu so its bottom edge aligns with the click point
+            // This puts the menu directly above where the user clicked (the tray icon)
+            let y = (click_y as f32 - menu_height).max(10.0);
             
-            info!(click_x = click_x, click_y = click_y, screen_height = screen_height, menu_x = x, menu_y = y, "Positioning menu near tray icon");
+            info!(click_x = click_x, click_y = click_y, screen_w = screen_width, screen_h = screen_height, menu_x = x, menu_y = y, "Positioning menu above bottom panel");
             (x, y)
         } else if let Some(display) = cx.primary_display() {
             // Fallback: top-right of screen
