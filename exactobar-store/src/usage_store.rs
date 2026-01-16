@@ -32,8 +32,11 @@ pub struct CostUsageSnapshot {
 /// Daily cost breakdown.
 #[derive(Debug, Clone)]
 pub struct DailyCost {
+    /// Date of the usage.
     pub date: DateTime<Utc>,
+    /// Tokens used on the date.
     pub tokens: u64,
+    /// Estimated USD cost for the date.
     pub cost_usd: f64,
 }
 

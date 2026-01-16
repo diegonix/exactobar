@@ -19,6 +19,11 @@ pub fn surface_background() -> Hsla {
     hsla(0.0, 0.0, 0.0, 0.01) // Almost invisible - blur does the work
 }
 
+/// Opaque window background for desktop platforms without blur support.
+pub fn window_background() -> Hsla {
+    hsla(0.0, 0.0, 0.12, 0.98)
+}
+
 /// Liquid glass panel tint - ultra-subtle dark tint for definition.
 pub fn liquid_glass_tint() -> Hsla {
     hsla(0.0, 0.0, 0.05, 0.6) // Very subtle dark tint

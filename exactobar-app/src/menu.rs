@@ -111,7 +111,7 @@ impl Render for MenuPanel {
         // Build provider card data if we have a provider to show
         let card_data = show_provider.map(|p| MenuCardData::new(p, cx));
 
-        div()
+        let mut root = div()
             .id("menu-panel")
             .w(px(340.))  // Slightly wider like Notification Center
             // TRUE LIQUID GLASS: NO background at all! Window blur does everything.
@@ -129,7 +129,14 @@ impl Render for MenuPanel {
             // Menu card for selected provider
             .when_some(card_data, |el, data| el.child(MenuCard::new(data)))
             // Action footer with WORKING buttons
-            .child(MenuFooter::new())
+            .child(MenuFooter::new());
+
+        #[cfg(target_os = "linux")]
+        {
+            root = root.bg(theme::window_background());
+        }
+
+        root
     }
 }
 
@@ -801,7 +808,7 @@ impl IntoElement for FooterActionButton {
                     }
                     FooterAction::Settings => {
                         tracing::trace!("Settings button clicked, opening settings window");
-                        let task = cx.spawn(async move |mut cx| {
+                        let task = cx.spawn(async move |cx| {
                             cx.update(|cx| {
                                 windows::open_settings(cx);
                             });

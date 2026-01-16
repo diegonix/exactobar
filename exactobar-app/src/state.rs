@@ -1,4 +1,5 @@
 //! Global application state.
+#![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 //!
 //! Manages settings, usage data, and UI state accessible from GPUI context.
 
@@ -122,7 +123,7 @@ impl AppState {
     pub fn refresh_provider(&self, provider: ProviderKind, cx: &mut App) {
         let usage = self.usage.clone();
 
-        cx.spawn(async move |mut cx| {
+        cx.spawn(async move |cx| {
             // Mark as refreshing
             let _ = cx.update_entity(&usage, |model, cx| {
                 model.set_refreshing(provider, true);

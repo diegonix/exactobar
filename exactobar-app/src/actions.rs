@@ -1,4 +1,5 @@
 //! Application actions.
+#![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 //!
 //! Simple action handlers for the app.
 
@@ -42,7 +43,7 @@ fn refresh_provider_async(
     usage: Entity<UsageModel>,
     cx: &mut App,
 ) {
-    cx.spawn(async move |mut cx| {
+    cx.spawn(async move |cx| {
         // Mark as refreshing
         let _ = cx.update_entity(&usage, |model, cx| {
             model.set_refreshing(provider, true);

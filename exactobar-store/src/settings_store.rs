@@ -220,11 +220,16 @@ impl std::fmt::Display for RefreshCadence {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum LogLevel {
+    /// Error-level logs only.
     Error,
+    /// Warnings and errors.
     Warn,
     #[default]
+    /// Informational logs (default).
     Info,
+    /// Debug-level logs.
     Debug,
+    /// Trace-level logs (most verbose).
     Trace,
 }
 

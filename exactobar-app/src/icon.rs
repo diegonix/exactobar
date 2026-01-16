@@ -1,4 +1,5 @@
 //! Dynamic icon rendering for menu bar.
+#![cfg_attr(not(target_os = "macos"), allow(dead_code))]
 //!
 //! Renders provider icons with usage meters using tiny-skia.
 //! Supports both colored mode and template mode (grayscale for macOS).
