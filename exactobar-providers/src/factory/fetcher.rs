@@ -104,8 +104,7 @@ impl FactoryUsageFetcher {
     async fn fetch_via_workos(&self) -> Result<UsageSnapshot, FactoryError> {
         debug!("Fetching via WorkOS token");
 
-        let token = FactoryWebClient::load_workos_token()
-            .ok_or(FactoryError::NoWorkOSToken)?;
+        let token = FactoryWebClient::load_workos_token().ok_or(FactoryError::NoWorkOSToken)?;
 
         let client = FactoryWebClient::new();
         let usage = client.fetch_usage(&token, true).await?;

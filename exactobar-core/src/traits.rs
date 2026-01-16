@@ -3,7 +3,7 @@
 //! This module defines the core traits that provider implementations must satisfy.
 
 use crate::error::CoreError;
-use crate::models::{Credits, CostUsageSnapshot, ProviderKind, Quota, UsageData, UsageSnapshot};
+use crate::models::{CostUsageSnapshot, Credits, ProviderKind, Quota, UsageData, UsageSnapshot};
 
 /// Trait for providers that can fetch usage data.
 ///
@@ -27,9 +27,8 @@ pub trait UsageProvider: Send + Sync {
     ///
     /// This is an async operation that may involve network requests.
     /// Prefer `fetch_snapshot` for richer data.
-    fn fetch_usage(
-        &self,
-    ) -> impl std::future::Future<Output = Result<UsageData, CoreError>> + Send;
+    fn fetch_usage(&self)
+    -> impl std::future::Future<Output = Result<UsageData, CoreError>> + Send;
 
     /// Fetches current usage snapshot from the provider (rich format).
     ///
@@ -58,17 +57,14 @@ pub trait UsageProvider: Send + Sync {
 /// Trait for providers that support quota information.
 pub trait QuotaProvider: UsageProvider {
     /// Fetches quota information from the provider.
-    fn fetch_quota(
-        &self,
-    ) -> impl std::future::Future<Output = Result<Quota, CoreError>> + Send;
+    fn fetch_quota(&self) -> impl std::future::Future<Output = Result<Quota, CoreError>> + Send;
 }
 
 /// Trait for providers that support credit-based systems.
 pub trait CreditsProvider: UsageProvider {
     /// Fetches credits information from the provider.
-    fn fetch_credits(
-        &self,
-    ) -> impl std::future::Future<Output = Result<Credits, CoreError>> + Send;
+    fn fetch_credits(&self)
+    -> impl std::future::Future<Output = Result<Credits, CoreError>> + Send;
 }
 
 /// Trait for providers that support token cost tracking.

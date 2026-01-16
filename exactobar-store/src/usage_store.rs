@@ -7,7 +7,7 @@ use exactobar_core::{Credits, ProviderKind, ProviderStatus, UsageSnapshot};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::{RwLock, watch};
 use tracing::{debug, info, warn};
 
 use crate::error::StoreError;
@@ -442,16 +442,20 @@ mod tests {
         let store = UsageStore::new();
 
         // No snapshot = stale
-        assert!(store
-            .is_stale(ProviderKind::Codex, Duration::from_secs(60))
-            .await);
+        assert!(
+            store
+                .is_stale(ProviderKind::Codex, Duration::from_secs(60))
+                .await
+        );
 
         // After setting, not stale
         store
             .set_snapshot(ProviderKind::Codex, UsageSnapshot::new())
             .await;
-        assert!(!store
-            .is_stale(ProviderKind::Codex, Duration::from_secs(60))
-            .await);
+        assert!(
+            !store
+                .is_stale(ProviderKind::Codex, Duration::from_secs(60))
+                .await
+        );
     }
 }

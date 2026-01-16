@@ -3,7 +3,7 @@
 use exactobar_core::{
     FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
 };
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, COOKIE, USER_AGENT};
+use reqwest::header::{ACCEPT, COOKIE, HeaderMap, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use tracing::{debug, instrument, warn};
 
@@ -27,12 +27,7 @@ const KEEPALIVE_ENDPOINT: &str = "/api/keepalive";
 const USER_ENDPOINT: &str = "/api/user";
 
 /// Session cookie names.
-const SESSION_COOKIE_NAMES: &[&str] = &[
-    "__session",
-    "augment_session",
-    "session",
-    "connect.sid",
-];
+const SESSION_COOKIE_NAMES: &[&str] = &["__session", "augment_session", "session", "connect.sid"];
 
 // ============================================================================
 // API Response Types

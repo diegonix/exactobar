@@ -106,11 +106,7 @@ impl IntoElement for ProviderCard {
         // Usage content
         if self.error.is_none() {
             if let Some(snap) = &self.snapshot {
-                let mut usage_div = div()
-                    .mt(px(12.0))
-                    .flex()
-                    .flex_col()
-                    .gap(px(8.0));
+                let mut usage_div = div().mt(px(12.0)).flex().flex_col().gap(px(8.0));
 
                 if let Some(primary) = &snap.primary {
                     let remaining = 100.0 - primary.used_percent;

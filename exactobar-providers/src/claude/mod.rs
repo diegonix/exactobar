@@ -61,7 +61,7 @@ pub use descriptor::claude_descriptor;
 pub use error::ClaudeError;
 pub use fetcher::{ClaudeDataSource, ClaudeUsageFetcher};
 pub use oauth::{ClaudeOAuthCredentials, CredentialSource};
-pub use pty_probe::{parse_usage_output, ClaudePtyProbe, ClaudeStatusSnapshot};
+pub use pty_probe::{ClaudePtyProbe, ClaudeStatusSnapshot, parse_usage_output};
 pub use strategies::{
     ClaudeCliStrategy, ClaudeOAuthStrategy, ClaudePtyStrategy, ClaudeWebStrategy,
 };

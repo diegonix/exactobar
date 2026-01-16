@@ -45,11 +45,7 @@ const IDLE_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Patterns that indicate we should stop reading.
 const STOP_PATTERNS: &[&str] = &[
-    "Account:",
-    "email:",
-    "Error:",
-    "error:",
-    ">>> ", // Prompt
+    "Account:", "email:", "Error:", "error:", ">>> ", // Prompt
 ];
 
 // ============================================================================
@@ -57,19 +53,16 @@ const STOP_PATTERNS: &[&str] = &[
 // ============================================================================
 
 /// Pattern for "XX% left" or "XX% remaining"
-static PERCENT_LEFT_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(\d+(?:\.\d+)?)%\s*(?:left|remaining)").expect("Invalid regex")
-});
+static PERCENT_LEFT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(\d+(?:\.\d+)?)%\s*(?:left|remaining)").expect("Invalid regex"));
 
 /// Pattern for "XX% used"
-static PERCENT_USED_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(\d+(?:\.\d+)?)%\s*used").expect("Invalid regex")
-});
+static PERCENT_USED_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(\d+(?:\.\d+)?)%\s*used").expect("Invalid regex"));
 
 /// Pattern for "Resets <time>" or "Reset: <time>"
-static RESET_TIME_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)resets?:?\s+(.+?)(?:\n|$)").expect("Invalid regex")
-});
+static RESET_TIME_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)resets?:?\s+(.+?)(?:\n|$)").expect("Invalid regex"));
 
 /// Pattern for account email.
 static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -255,21 +248,29 @@ pub fn parse_usage_output(text: &str) -> Result<ClaudeStatusSnapshot, ClaudeErro
         let section_lower = section.to_lowercase();
 
         // Determine section type and extract data
-        if section_lower.contains("session") || section_lower.contains("5h") || section_lower.contains("5 hour") {
+        if section_lower.contains("session")
+            || section_lower.contains("5h")
+            || section_lower.contains("5 hour")
+        {
             if let Some(pct) = extract_percent_left(section) {
                 snapshot.session_percent_left = Some(pct);
             } else if let Some(pct) = extract_percent_used(section) {
                 snapshot.session_percent_left = Some(100.0 - pct);
             }
             snapshot.session_reset = extract_reset_time(section);
-        } else if section_lower.contains("week") && (section_lower.contains("all") || !section_lower.contains("sonnet")) {
+        } else if section_lower.contains("week")
+            && (section_lower.contains("all") || !section_lower.contains("sonnet"))
+        {
             if let Some(pct) = extract_percent_left(section) {
                 snapshot.weekly_percent_left = Some(pct);
             } else if let Some(pct) = extract_percent_used(section) {
                 snapshot.weekly_percent_left = Some(100.0 - pct);
             }
             snapshot.weekly_reset = extract_reset_time(section);
-        } else if section_lower.contains("opus") || section_lower.contains("sonnet") || section_lower.contains("premium") {
+        } else if section_lower.contains("opus")
+            || section_lower.contains("sonnet")
+            || section_lower.contains("premium")
+        {
             if let Some(pct) = extract_percent_left(section) {
                 snapshot.opus_percent_left = Some(pct);
             } else if let Some(pct) = extract_percent_used(section) {
@@ -329,16 +330,16 @@ fn split_into_sections(text: &str) -> Vec<String> {
 
 /// Extract "XX% left" from text.
 pub fn extract_percent_left(text: &str) -> Option<f64> {
-    PERCENT_LEFT_RE.captures(text).and_then(|caps| {
-        caps.get(1)?.as_str().parse().ok()
-    })
+    PERCENT_LEFT_RE
+        .captures(text)
+        .and_then(|caps| caps.get(1)?.as_str().parse().ok())
 }
 
 /// Extract "XX% used" from text.
 pub fn extract_percent_used(text: &str) -> Option<f64> {
-    PERCENT_USED_RE.captures(text).and_then(|caps| {
-        caps.get(1)?.as_str().parse().ok()
-    })
+    PERCENT_USED_RE
+        .captures(text)
+        .and_then(|caps| caps.get(1)?.as_str().parse().ok())
 }
 
 /// Extract reset time description.
@@ -355,9 +356,9 @@ pub fn extract_reset_time(text: &str) -> Option<String> {
 
 /// Extract email from text.
 pub fn extract_email(text: &str) -> Option<String> {
-    EMAIL_RE.captures(text).and_then(|caps| {
-        Some(caps.get(1)?.as_str().to_string())
-    })
+    EMAIL_RE
+        .captures(text)
+        .and_then(|caps| Some(caps.get(1)?.as_str().to_string()))
 }
 
 /// Extract organization from text.
@@ -374,9 +375,9 @@ pub fn extract_organization(text: &str) -> Option<String> {
 
 /// Extract login method from text.
 pub fn extract_login_method(text: &str) -> Option<String> {
-    LOGIN_RE.captures(text).and_then(|caps| {
-        Some(caps.get(1)?.as_str().to_lowercase())
-    })
+    LOGIN_RE
+        .captures(text)
+        .and_then(|caps| Some(caps.get(1)?.as_str().to_lowercase()))
 }
 
 /// Fallback line-by-line parsing.
@@ -462,13 +463,11 @@ impl ClaudeStatusSnapshot {
             let mut identity = ProviderIdentity::new(ProviderKind::Claude);
             identity.account_email = self.account_email.clone();
             identity.account_organization = self.account_organization.clone();
-            identity.login_method = self.login_method.as_deref().and_then(|m| {
-                match m {
-                    "oauth" => Some(LoginMethod::OAuth),
-                    "api" | "api_key" => Some(LoginMethod::ApiKey),
-                    "cli" => Some(LoginMethod::CLI),
-                    _ => None,
-                }
+            identity.login_method = self.login_method.as_deref().and_then(|m| match m {
+                "oauth" => Some(LoginMethod::OAuth),
+                "api" | "api_key" => Some(LoginMethod::ApiKey),
+                "cli" => Some(LoginMethod::CLI),
+                _ => None,
             });
             snapshot.identity = Some(identity);
         }

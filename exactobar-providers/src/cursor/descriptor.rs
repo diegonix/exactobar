@@ -4,8 +4,8 @@ use exactobar_core::{IconStyle, ProviderBranding, ProviderColor, ProviderKind, P
 use exactobar_fetch::{FetchContext, FetchPipeline, SourceMode};
 use std::path::PathBuf;
 
-use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 use super::strategies::{CursorLocalStrategy, CursorWebStrategy};
+use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 
 /// Creates the Cursor provider descriptor.
 pub fn cursor_descriptor() -> ProviderDescriptor {

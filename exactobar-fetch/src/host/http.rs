@@ -6,7 +6,7 @@
 //! - Cookie support for web scraping
 //! - Convenience methods for common operations
 
-use reqwest::{header, header::HeaderMap, Client, Response};
+use reqwest::{Client, Response, header, header::HeaderMap};
 use std::time::Duration;
 use tracing::{debug, instrument};
 use url::Url;
@@ -84,9 +84,9 @@ impl HttpClient {
             .ok_or_else(|| HttpError::InvalidUrl("No host in URL".to_string()))?;
 
         // Check if host matches any allowed domain
-        let allowed = allowed.iter().any(|domain| {
-            host == domain || host.ends_with(&format!(".{domain}"))
-        });
+        let allowed = allowed
+            .iter()
+            .any(|domain| host == domain || host.ends_with(&format!(".{domain}")));
 
         if allowed {
             Ok(())
@@ -123,11 +123,7 @@ impl HttpClient {
 
     /// Performs a GET request with an authorization header.
     #[instrument(skip(self, auth_header), fields(url = %url))]
-    pub async fn get_with_auth(
-        &self,
-        url: &str,
-        auth_header: &str,
-    ) -> Result<Response, HttpError> {
+    pub async fn get_with_auth(&self, url: &str, auth_header: &str) -> Result<Response, HttpError> {
         self.is_domain_allowed(url)?;
         debug!("GET request with auth");
 
@@ -145,11 +141,7 @@ impl HttpClient {
     ///
     /// Used for web scraping strategies that need browser session cookies.
     #[instrument(skip(self, cookies), fields(url = %url))]
-    pub async fn get_with_cookies(
-        &self,
-        url: &str,
-        cookies: &str,
-    ) -> Result<Response, HttpError> {
+    pub async fn get_with_cookies(&self, url: &str, cookies: &str) -> Result<Response, HttpError> {
         self.is_domain_allowed(url)?;
         debug!("GET request with cookies");
 
@@ -247,11 +239,23 @@ mod tests {
         ]);
 
         // Allowed domains
-        assert!(client.is_domain_allowed("https://api.anthropic.com/v1/usage").is_ok());
-        assert!(client.is_domain_allowed("https://api.openai.com/v1/usage").is_ok());
+        assert!(
+            client
+                .is_domain_allowed("https://api.anthropic.com/v1/usage")
+                .is_ok()
+        );
+        assert!(
+            client
+                .is_domain_allowed("https://api.openai.com/v1/usage")
+                .is_ok()
+        );
 
         // Subdomain matching
-        assert!(client.is_domain_allowed("https://status.openai.com").is_ok());
+        assert!(
+            client
+                .is_domain_allowed("https://status.openai.com")
+                .is_ok()
+        );
 
         // Not allowed
         assert!(client.is_domain_allowed("https://evil.com/steal").is_err());

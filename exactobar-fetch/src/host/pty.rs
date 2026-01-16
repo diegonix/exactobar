@@ -33,7 +33,7 @@
 //! # }
 //! ```
 
-use portable_pty::{native_pty_system, CommandBuilder, PtySize};
+use portable_pty::{CommandBuilder, PtySize, native_pty_system};
 use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::path::PathBuf;
@@ -394,9 +394,7 @@ fn run_pty_blocking(
     // Send initial input
     if !input.is_empty() {
         trace!(input_len = input.len(), "Sending input to PTY");
-        master
-            .write_all(input.as_bytes())
-            .map_err(PtyError::Io)?;
+        master.write_all(input.as_bytes()).map_err(PtyError::Io)?;
         master.flush().map_err(PtyError::Io)?;
     }
 
@@ -636,7 +634,10 @@ mod tests {
 
         assert_eq!(opts.timeout, Duration::from_secs(60));
         assert_eq!(opts.stop_on_substrings, vec!["Done", "Error"]);
-        assert_eq!(opts.send_on_substrings.get("Press Enter"), Some(&"\n".to_string()));
+        assert_eq!(
+            opts.send_on_substrings.get("Press Enter"),
+            Some(&"\n".to_string())
+        );
         assert_eq!(opts.working_dir, Some(PathBuf::from("/tmp")));
         assert_eq!(opts.env.get("MY_VAR"), Some(&"value".to_string()));
         assert_eq!(opts.idle_timeout, Some(Duration::from_secs(5)));
@@ -716,9 +717,7 @@ mod tests {
             .with_idle_timeout(Duration::from_secs(2));
 
         // Run a shell command that echoes and exits
-        let result = runner
-            .run("sh", "-c 'echo hello world'\n", options)
-            .await;
+        let result = runner.run("sh", "-c 'echo hello world'\n", options).await;
 
         assert!(result.is_ok());
         let output = result.unwrap();
@@ -756,7 +755,7 @@ mod tests {
     #[tokio::test]
     async fn test_run_timeout() {
         let runner = PtyRunner::default();
-        
+
         // Use sh to run sleep so it actually works
         let options = PtyOptions::with_timeout(Duration::from_millis(200))
             .with_idle_timeout(Duration::from_millis(300)); // Idle timeout longer than main
@@ -767,7 +766,10 @@ mod tests {
         assert!(result.is_ok());
         let result = result.unwrap();
         // Should timeout (overall timeout) before idle timeout
-        assert!(result.timed_out || result.idle_timed_out, "Expected some kind of timeout, got: {:?}", result);
+        assert!(
+            result.timed_out || result.idle_timed_out,
+            "Expected some kind of timeout, got: {result:?}"
+        );
     }
 
     #[tokio::test]

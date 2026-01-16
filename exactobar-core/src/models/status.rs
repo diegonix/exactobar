@@ -53,7 +53,10 @@ impl ProviderStatus {
 
     /// Returns true if there's any degradation or outage.
     pub fn has_issues(&self) -> bool {
-        !matches!(self.indicator, StatusIndicator::None | StatusIndicator::Unknown)
+        !matches!(
+            self.indicator,
+            StatusIndicator::None | StatusIndicator::Unknown
+        )
     }
 
     /// Returns true if this is a critical outage.

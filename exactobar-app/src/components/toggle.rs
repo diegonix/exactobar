@@ -38,16 +38,14 @@ impl Toggle {
     }
 }
 
-
-
 impl IntoElement for Toggle {
     type Element = Stateful<Div>;
 
     fn into_element(mut self) -> Self::Element {
         let track_color = if self.checked {
-            hsla(217.0 / 360.0, 0.91, 0.60, 1.0)  // Blue when checked
+            hsla(217.0 / 360.0, 0.91, 0.60, 1.0) // Blue when checked
         } else {
-            hsla(0.0, 0.0, 0.8, 1.0)  // Gray when unchecked
+            hsla(0.0, 0.0, 0.8, 1.0) // Gray when unchecked
         };
 
         let knob_offset = if self.checked { px(14.0) } else { px(2.0) };

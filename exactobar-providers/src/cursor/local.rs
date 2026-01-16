@@ -184,9 +184,8 @@ impl CursorLocalReader {
             if storage_path.exists() {
                 debug!(path = %storage_path.display(), "Reading storage.json");
 
-                let content = std::fs::read_to_string(&storage_path).map_err(|e| {
-                    CursorError::ConfigParseError(format!("Failed to read: {}", e))
-                })?;
+                let content = std::fs::read_to_string(&storage_path)
+                    .map_err(|e| CursorError::ConfigParseError(format!("Failed to read: {}", e)))?;
 
                 if let Ok(snapshot) = self.parse_storage_json(&content) {
                     return Ok(snapshot);
@@ -214,9 +213,8 @@ impl CursorLocalReader {
     fn parse_storage_json(&self, content: &str) -> Result<UsageSnapshot, CursorError> {
         // The storage.json has keys like "cursorAuth/cachedUser" as top-level keys
         // We need to try parsing it as a flat JSON object
-        let raw: serde_json::Value = serde_json::from_str(content).map_err(|e| {
-            CursorError::ConfigParseError(format!("Invalid JSON: {}", e))
-        })?;
+        let raw: serde_json::Value = serde_json::from_str(content)
+            .map_err(|e| CursorError::ConfigParseError(format!("Invalid JSON: {}", e)))?;
 
         let mut snapshot = UsageSnapshot::new();
         snapshot.fetch_source = exactobar_core::FetchSource::LocalProbe;
@@ -247,7 +245,10 @@ impl CursorLocalReader {
         }
 
         // Try to extract subscription info
-        if let Some(sub_str) = raw.get("cursorAuth/cachedSubscription").and_then(|v| v.as_str()) {
+        if let Some(sub_str) = raw
+            .get("cursorAuth/cachedSubscription")
+            .and_then(|v| v.as_str())
+        {
             if let Ok(sub) = serde_json::from_str::<CursorLocalSubscription>(sub_str) {
                 if let Some(ref mut identity) = snapshot.identity {
                     identity.plan_name = sub.plan;
@@ -266,9 +267,8 @@ impl CursorLocalReader {
         let temp_dir = std::env::temp_dir();
         let temp_path = temp_dir.join(format!("cursor_state_{}.db", std::process::id()));
 
-        std::fs::copy(db_path, &temp_path).map_err(|e| {
-            CursorError::ConfigParseError(format!("Failed to copy db: {}", e))
-        })?;
+        std::fs::copy(db_path, &temp_path)
+            .map_err(|e| CursorError::ConfigParseError(format!("Failed to copy db: {}", e)))?;
 
         let conn = Connection::open_with_flags(&temp_path, OpenFlags::SQLITE_OPEN_READ_ONLY)
             .map_err(|e| CursorError::ConfigParseError(format!("SQLite error: {}", e)))?;
@@ -305,8 +305,7 @@ impl CursorLocalReader {
                 "cursorAuth/cachedUsage" => {
                     if let Ok(usage) = serde_json::from_str::<CursorLocalUsage>(&value) {
                         if let Some(percent) = usage.get_primary_percent() {
-                            snapshot.primary =
-                                Some(exactobar_core::UsageWindow::new(percent));
+                            snapshot.primary = Some(exactobar_core::UsageWindow::new(percent));
                         }
                     }
                 }

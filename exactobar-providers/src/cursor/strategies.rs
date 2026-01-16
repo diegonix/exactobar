@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 use exactobar_core::{FetchSource, UsageSnapshot};
 use exactobar_fetch::{
-    host::browser::Browser, FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy,
+    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, host::browser::Browser,
 };
 use tracing::{debug, instrument, warn};
 

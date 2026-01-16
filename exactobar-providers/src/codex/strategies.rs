@@ -62,10 +62,11 @@ impl FetchStrategy for CodexRpcStrategy {
         debug!("Fetching Codex usage via RPC");
 
         let fetcher = CodexUsageFetcher::rpc_only();
-        let snapshot = fetcher
-            .fetch_usage()
-            .await
-            .map_err(|e| FetchError::Process(exactobar_fetch::ProcessError::ExecutionFailed(e.to_string())))?;
+        let snapshot = fetcher.fetch_usage().await.map_err(|e| {
+            FetchError::Process(exactobar_fetch::ProcessError::ExecutionFailed(
+                e.to_string(),
+            ))
+        })?;
 
         Ok(FetchResult::new(snapshot, self.id(), self.kind()))
     }
@@ -118,10 +119,11 @@ impl FetchStrategy for CodexPtyStrategy {
         debug!("Fetching Codex usage via PTY");
 
         let fetcher = CodexUsageFetcher::pty_only();
-        let snapshot = fetcher
-            .fetch_usage()
-            .await
-            .map_err(|e| FetchError::Process(exactobar_fetch::ProcessError::ExecutionFailed(e.to_string())))?;
+        let snapshot = fetcher.fetch_usage().await.map_err(|e| {
+            FetchError::Process(exactobar_fetch::ProcessError::ExecutionFailed(
+                e.to_string(),
+            ))
+        })?;
 
         Ok(FetchResult::new(snapshot, self.id(), self.kind()))
     }
@@ -172,7 +174,11 @@ impl FetchStrategy for CodexCliStrategy {
     #[instrument(skip(self, ctx))]
     async fn is_available(&self, ctx: &FetchContext) -> bool {
         let exists = ctx.process.command_exists(self.command);
-        debug!(command = self.command, exists = exists, "Checking CLI availability");
+        debug!(
+            command = self.command,
+            exists = exists,
+            "Checking CLI availability"
+        );
         exists
     }
 
@@ -267,10 +273,9 @@ impl FetchStrategy for CodexApiStrategy {
     async fn fetch(&self, ctx: &FetchContext) -> Result<FetchResult, FetchError> {
         debug!("Fetching Codex usage via API");
 
-        let api_key = self
-            .get_api_key(ctx)
-            .await
-            .ok_or_else(|| FetchError::AuthenticationFailed("No OpenAI API key found".to_string()))?;
+        let api_key = self.get_api_key(ctx).await.ok_or_else(|| {
+            FetchError::AuthenticationFailed("No OpenAI API key found".to_string())
+        })?;
 
         // OpenAI doesn't have a direct usage API endpoint that works with API keys
         // in the same way - the usage endpoint requires organization-level access.

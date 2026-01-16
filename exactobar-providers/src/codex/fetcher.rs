@@ -306,12 +306,12 @@ mod tests {
                 primary: Some(RateLimitWindow {
                     used_percent: 28.5,
                     window_duration_mins: Some(300),
-                    resets_at: Some(1735000000),
+                    resets_at: Some(1_735_000_000),
                 }),
                 secondary: Some(RateLimitWindow {
                     used_percent: 59.2,
                     window_duration_mins: Some(10080),
-                    resets_at: Some(1735100000),
+                    resets_at: Some(1_735_100_000),
                 }),
                 credits: Some(CreditsInfo {
                     has_credits: Some(true),
@@ -387,7 +387,7 @@ mod tests {
 
     #[test]
     fn test_timestamp_conversion() {
-        let ts = 1735000000_i64; // Some future timestamp
+        let ts = 1_735_000_000_i64; // Some future timestamp
         let dt = timestamp_to_datetime(ts);
         assert_eq!(dt.timestamp(), ts);
     }

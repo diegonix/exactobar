@@ -11,7 +11,7 @@ use std::path::PathBuf;
 use exactobar_core::{
     FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
 };
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, COOKIE, USER_AGENT};
+use reqwest::header::{ACCEPT, AUTHORIZATION, COOKIE, HeaderMap, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use tracing::{debug, instrument, warn};
 
@@ -40,11 +40,7 @@ pub const MINIMAX_DOMAIN: &str = "minimax.chat";
 pub const HAILUOAI_DOMAIN: &str = "hailuoai.com";
 
 /// Session cookie names for MiniMax.
-const SESSION_COOKIE_NAMES: &[&str] = &[
-    "__session",
-    "minimax_session",
-    "session",
-];
+const SESSION_COOKIE_NAMES: &[&str] = &["__session", "minimax_session", "session"];
 
 /// Session cookie names specific to Hailuoai.
 const HAILUOAI_COOKIE_NAMES: &[&str] = &[
@@ -192,9 +188,7 @@ impl MiniMaxLocalStorage {
             paths.push(app_support.join("Arc/User Data/Default/Local Storage/leveldb"));
 
             // Edge
-            paths.push(
-                app_support.join("Microsoft Edge/Default/Local Storage/leveldb"),
-            );
+            paths.push(app_support.join("Microsoft Edge/Default/Local Storage/leveldb"));
 
             // Brave
             paths.push(
@@ -235,9 +229,8 @@ impl MiniMaxLocalStorage {
 
         if let Some(local_app_data) = dirs::data_local_dir() {
             // Chrome
-            paths.push(
-                local_app_data.join("Google/Chrome/User Data/Default/Local Storage/leveldb"),
-            );
+            paths
+                .push(local_app_data.join("Google/Chrome/User Data/Default/Local Storage/leveldb"));
 
             // Edge
             paths.push(
@@ -333,7 +326,11 @@ impl MiniMaxLocalStorage {
                 if let Some(end) = text[value_start..].find('"') {
                     let token = &text[value_start..value_start + end];
                     // Basic validation: token should be reasonable length and alphanumeric-ish
-                    if token.len() > 20 && token.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.') {
+                    if token.len() > 20
+                        && token
+                            .chars()
+                            .all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_' || c == '.')
+                    {
                         debug!("Found potential MiniMax token in localStorage");
                         return Some(token.to_string());
                     }
@@ -588,8 +585,7 @@ impl MiniMaxWebClient {
     ) -> Result<MiniMaxUsageResponse, MiniMaxError> {
         debug!("Attempting to fetch MiniMax usage from localStorage token");
 
-        let token = MiniMaxLocalStorage::find_token()
-            .ok_or_else(|| MiniMaxError::NoToken)?;
+        let token = MiniMaxLocalStorage::find_token().ok_or_else(|| MiniMaxError::NoToken)?;
 
         self.fetch_usage_with_token(&token).await
     }
@@ -606,6 +602,7 @@ impl Default for MiniMaxWebClient {
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 
@@ -624,10 +621,18 @@ mod tests {
 
     #[test]
     fn test_has_hailuoai_session_cookie() {
-        assert!(MiniMaxWebClient::has_hailuoai_session_cookie("_token=abc123"));
-        assert!(MiniMaxWebClient::has_hailuoai_session_cookie("user_token=xyz"));
-        assert!(MiniMaxWebClient::has_hailuoai_session_cookie("access_token=foo"));
-        assert!(!MiniMaxWebClient::has_hailuoai_session_cookie("random=value"));
+        assert!(MiniMaxWebClient::has_hailuoai_session_cookie(
+            "_token=abc123"
+        ));
+        assert!(MiniMaxWebClient::has_hailuoai_session_cookie(
+            "user_token=xyz"
+        ));
+        assert!(MiniMaxWebClient::has_hailuoai_session_cookie(
+            "access_token=foo"
+        ));
+        assert!(!MiniMaxWebClient::has_hailuoai_session_cookie(
+            "random=value"
+        ));
     }
 
     #[test]

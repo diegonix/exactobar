@@ -8,7 +8,7 @@ use tracing::{debug, instrument};
 use super::probe::AntigravityProbe;
 
 /// Local probe strategy for Antigravity.
-/// 
+///
 /// Detects the running Antigravity process, extracts CSRF token,
 /// and queries the gRPC-style API for usage quotas.
 pub struct AntigravityLocalStrategy {

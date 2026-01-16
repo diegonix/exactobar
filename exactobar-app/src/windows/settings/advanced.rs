@@ -2,9 +2,9 @@
 
 use gpui::*;
 
+use super::SettingsTheme;
 use crate::components::Toggle;
 use crate::state::AppState;
-use super::SettingsTheme;
 
 /// Advanced settings pane.
 pub struct AdvancedPane {
@@ -85,7 +85,12 @@ impl IntoElement for AdvancedPane {
                             .flex()
                             .flex_col()
                             .gap(px(2.0))
-                            .child(div().text_sm().font_weight(FontWeight::MEDIUM).child("Debug Mode"))
+                            .child(
+                                div()
+                                    .text_sm()
+                                    .font_weight(FontWeight::MEDIUM)
+                                    .child("Debug Mode"),
+                            )
                             .child(
                                 div()
                                     .text_xs()

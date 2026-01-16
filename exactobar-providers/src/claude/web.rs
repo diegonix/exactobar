@@ -21,7 +21,8 @@ use super::error::ClaudeError;
 pub const CLAUDE_DOMAIN: &str = "claude.ai";
 
 /// Usage API endpoint.
-pub const USAGE_ENDPOINT: &str = "https://claude.ai/api/organizations/{org}/chat_conversations/usage";
+pub const USAGE_ENDPOINT: &str =
+    "https://claude.ai/api/organizations/{org}/chat_conversations/usage";
 
 /// Default organization ID.
 pub const DEFAULT_ORG: &str = "default";
@@ -150,7 +151,10 @@ impl ClaudeWebClient {
             .header("Cookie", cookie_header)
             .header("Content-Type", "application/json")
             .header("Accept", "application/json")
-            .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36")
+            .header(
+                "User-Agent",
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+            )
             .send()
             .await
             .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
@@ -166,7 +170,10 @@ impl ClaudeWebClient {
         if !status.is_success() {
             let body = response.text().await.unwrap_or_default();
             warn!(status = %status, body = %body, "Web API request failed");
-            return Err(ClaudeError::ApiError(format!("Status {}: {}", status, body)));
+            return Err(ClaudeError::ApiError(format!(
+                "Status {}: {}",
+                status, body
+            )));
         }
 
         let body = response
@@ -297,7 +304,9 @@ mod tests {
             "__Secure-next-auth.session-token=abc123"
         ));
         assert!(ClaudeWebClient::has_session_cookie("sessionKey=xyz"));
-        assert!(ClaudeWebClient::has_session_cookie("other=1; session=abc; foo=2"));
+        assert!(ClaudeWebClient::has_session_cookie(
+            "other=1; session=abc; foo=2"
+        ));
         assert!(!ClaudeWebClient::has_session_cookie("other=123; foo=bar"));
     }
 

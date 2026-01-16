@@ -145,7 +145,8 @@ pub fn parse_cursor_api_response(json_str: &str) -> Result<UsageSnapshot, FetchE
         }
 
         // Secondary window: premium requests
-        if let (Some(premium), Some(premium_limit)) = (usage.premium_requests, usage.premium_limit) {
+        if let (Some(premium), Some(premium_limit)) = (usage.premium_requests, usage.premium_limit)
+        {
             let percent = if premium_limit > 0 {
                 (premium as f64 / premium_limit as f64) * 100.0
             } else {
@@ -279,6 +280,9 @@ mod tests {
         let snapshot = parse_cursor_local_config(json).unwrap();
         assert!(snapshot.identity.is_some());
         let identity = snapshot.identity.unwrap();
-        assert_eq!(identity.account_email, Some("local@example.com".to_string()));
+        assert_eq!(
+            identity.account_email,
+            Some("local@example.com".to_string())
+        );
     }
 }

@@ -5,7 +5,7 @@
 
 use chrono::{DateTime, Utc};
 use exactobar_core::{LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow};
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, COOKIE, USER_AGENT};
+use reqwest::header::{ACCEPT, COOKIE, HeaderMap, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use tracing::{debug, instrument, warn};
 
@@ -134,10 +134,7 @@ impl CursorUsageResponse {
 
         // Try date only
         if let Ok(date) = chrono::NaiveDate::parse_from_str(end_str, "%Y-%m-%d") {
-            return Some(
-                date.and_hms_opt(0, 0, 0)?
-                    .and_utc(),
-            );
+            return Some(date.and_hms_opt(0, 0, 0)?.and_utc());
         }
 
         None
@@ -242,12 +239,7 @@ impl CursorWebClient {
         let url = format!("{}{}", CURSOR_API_BASE, USAGE_ENDPOINT);
         let headers = self.build_headers(cookie_header)?;
 
-        let response = self
-            .http
-            .get(&url)
-            .headers(headers)
-            .send()
-            .await?;
+        let response = self.http.get(&url).headers(headers).send().await?;
 
         let status = response.status();
 
@@ -258,9 +250,7 @@ impl CursorWebClient {
         }
 
         if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
-            return Err(CursorError::RateLimited(
-                "Too many requests".to_string(),
-            ));
+            return Err(CursorError::RateLimited("Too many requests".to_string()));
         }
 
         if !status.is_success() {
@@ -284,21 +274,13 @@ impl CursorWebClient {
 
     /// Fetch auth/user info from Cursor API.
     #[instrument(skip(self, cookie_header))]
-    pub async fn fetch_auth(
-        &self,
-        cookie_header: &str,
-    ) -> Result<CursorAuthResponse, CursorError> {
+    pub async fn fetch_auth(&self, cookie_header: &str) -> Result<CursorAuthResponse, CursorError> {
         debug!("Fetching Cursor auth info via web API");
 
         let url = format!("{}{}", CURSOR_API_BASE, AUTH_ME_ENDPOINT);
         let headers = self.build_headers(cookie_header)?;
 
-        let response = self
-            .http
-            .get(&url)
-            .headers(headers)
-            .send()
-            .await?;
+        let response = self.http.get(&url).headers(headers).send().await?;
 
         let status = response.status();
 
@@ -309,17 +291,13 @@ impl CursorWebClient {
         }
 
         if !status.is_success() {
-            return Err(CursorError::InvalidResponse(format!(
-                "HTTP {}",
-                status
-            )));
+            return Err(CursorError::InvalidResponse(format!("HTTP {}", status)));
         }
 
         let body = response.text().await?;
 
-        let auth: CursorAuthResponse = serde_json::from_str(&body).map_err(|e| {
-            CursorError::InvalidResponse(format!("JSON parse error: {}", e))
-        })?;
+        let auth: CursorAuthResponse = serde_json::from_str(&body)
+            .map_err(|e| CursorError::InvalidResponse(format!("JSON parse error: {}", e)))?;
 
         Ok(auth)
     }
@@ -328,19 +306,12 @@ impl CursorWebClient {
     fn build_headers(&self, cookie_header: &str) -> Result<HeaderMap, CursorError> {
         let mut headers = HeaderMap::new();
 
-        headers.insert(
-            USER_AGENT,
-            HeaderValue::from_static(USER_AGENT_VALUE),
-        );
-        headers.insert(
-            ACCEPT,
-            HeaderValue::from_static("application/json"),
-        );
+        headers.insert(USER_AGENT, HeaderValue::from_static(USER_AGENT_VALUE));
+        headers.insert(ACCEPT, HeaderValue::from_static("application/json"));
         headers.insert(
             COOKIE,
-            HeaderValue::from_str(cookie_header).map_err(|e| {
-                CursorError::HttpError(format!("Invalid cookie header: {}", e))
-            })?,
+            HeaderValue::from_str(cookie_header)
+                .map_err(|e| CursorError::HttpError(format!("Invalid cookie header: {}", e)))?,
         );
 
         Ok(headers)

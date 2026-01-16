@@ -10,7 +10,9 @@ pub enum VertexAIError {
     NotLoggedIn,
 
     /// No project configured.
-    #[error("No project configured: set `quota_project_id` in ADC or run `gcloud config set project <project>`")]
+    #[error(
+        "No project configured: set `quota_project_id` in ADC or run `gcloud config set project <project>`"
+    )]
     NoProject,
 
     /// Failed to parse credentials or response.

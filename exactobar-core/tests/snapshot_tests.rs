@@ -1,6 +1,6 @@
 //! Integration tests for core snapshot types.
 
-use exactobar_core::{ProviderKind, UsageSnapshot, UsageWindow};
+use exactobar_core::{UsageSnapshot, UsageWindow};
 
 #[test]
 fn test_snapshot_serialization_roundtrip() {
@@ -14,7 +14,7 @@ fn test_snapshot_serialization_roundtrip() {
 fn test_usage_window_validation() {
     let mut window = UsageWindow::new(50.0);
     assert!(window.validate().is_ok());
-    
+
     window.used_percent = -10.0;
     assert!(window.validate().is_err());
 }

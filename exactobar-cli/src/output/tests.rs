@@ -137,9 +137,7 @@ mod text_formatter_tests {
 
         assert!(output.contains("ExactoBar Summary"));
         // Provider names should appear
-        assert!(
-            output.contains("Claude") || output.contains("Codex") || output.contains("Cursor")
-        );
+        assert!(output.contains("Claude") || output.contains("Codex") || output.contains("Cursor"));
     }
 
     #[test]
@@ -167,7 +165,7 @@ mod json_formatter_tests {
         let output = formatter.format(&data).unwrap();
 
         // Pretty output should have newlines
-        assert!(output.contains("\n"));
+        assert!(output.contains('\n'));
         assert!(output.contains("  ")); // Indentation
     }
 
@@ -263,7 +261,11 @@ mod output_snapshot_tests {
             let bar = formatter.progress_bar(percent);
             // Each character in the bar is a unicode block
             let char_count: usize = bar.chars().count();
-            assert_eq!(char_count, 10, "Bar for {}% has {} chars", percent, char_count);
+            assert_eq!(
+                char_count, 10,
+                "Bar for {}% has {} chars",
+                percent, char_count
+            );
         }
     }
 

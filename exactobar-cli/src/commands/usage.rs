@@ -73,8 +73,6 @@ async fn fetch_all(
     providers: &[ProviderKind],
     ctx: &FetchContext,
 ) -> HashMap<ProviderKind, Result<UsageSnapshot, String>> {
-    
-
     // Note: This runs sequentially because FetchContext isn't Clone.
     // For true parallelism, we'd need to restructure the context.
     let mut results = HashMap::new();
@@ -87,10 +85,7 @@ async fn fetch_all(
 }
 
 /// Fetches usage from a single provider.
-async fn fetch_one(
-    provider: ProviderKind,
-    ctx: &FetchContext,
-) -> Result<UsageSnapshot, String> {
+async fn fetch_one(provider: ProviderKind, ctx: &FetchContext) -> Result<UsageSnapshot, String> {
     let desc = ProviderRegistry::get(provider)
         .ok_or_else(|| format!("Provider {:?} not found", provider))?;
 
@@ -154,7 +149,10 @@ fn parse_source_mode(s: &str) -> Result<SourceMode> {
         "api" | "apikey" | "api_key" => Ok(SourceMode::ApiKey),
         "web" | "cookies" => Ok(SourceMode::Web),
 
-        _ => anyhow::bail!("Unknown source mode: {}. Valid options: auto, cli, oauth, api, web, local, rpc", s),
+        _ => anyhow::bail!(
+            "Unknown source mode: {}. Valid options: auto, cli, oauth, api, web, local, rpc",
+            s
+        ),
     }
 }
 
@@ -238,9 +236,15 @@ mod tests {
 
     #[test]
     fn test_parse_source_mode() {
-        assert!(matches!(parse_source_mode("auto").unwrap(), SourceMode::Auto));
+        assert!(matches!(
+            parse_source_mode("auto").unwrap(),
+            SourceMode::Auto
+        ));
         assert!(matches!(parse_source_mode("cli").unwrap(), SourceMode::CLI));
-        assert!(matches!(parse_source_mode("oauth").unwrap(), SourceMode::OAuth));
+        assert!(matches!(
+            parse_source_mode("oauth").unwrap(),
+            SourceMode::OAuth
+        ));
         assert!(matches!(parse_source_mode("web").unwrap(), SourceMode::Web));
     }
 

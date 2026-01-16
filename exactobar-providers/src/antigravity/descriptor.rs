@@ -3,8 +3,8 @@
 use exactobar_core::{IconStyle, ProviderBranding, ProviderColor, ProviderKind, ProviderMetadata};
 use exactobar_fetch::{FetchContext, FetchPipeline, SourceMode};
 
-use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 use super::strategies::AntigravityLocalStrategy;
+use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 
 pub fn antigravity_descriptor() -> ProviderDescriptor {
     ProviderDescriptor {
@@ -55,9 +55,8 @@ fn antigravity_fetch_plan() -> FetchPlan {
 }
 
 fn build_antigravity_pipeline(_ctx: &FetchContext) -> FetchPipeline {
-    let strategies: Vec<Box<dyn exactobar_fetch::FetchStrategy>> = vec![
-        Box::new(AntigravityLocalStrategy::new()),
-    ];
+    let strategies: Vec<Box<dyn exactobar_fetch::FetchStrategy>> =
+        vec![Box::new(AntigravityLocalStrategy::new())];
 
     FetchPipeline::with_strategies(strategies)
 }

@@ -5,24 +5,24 @@
 //! # API Endpoint
 //!
 //! ```text
-//! GET https://api.anthropic.com/v1/usage
-//! Authorization: Bearer <access_token>
+//! GET https://api.anthropic.com/api/oauth/usage
+//! Authorization: Bearer sk-ant-oat01-YOUR_TOKEN
+//! anthropic-beta: oauth-2025-04-20
 //! ```
 //!
 //! # Response Format
 //!
 //! ```json
 //! {
-//!   "fiveHour": {"utilization": 25.0, "resetsAt": "2025-01-01T12:00:00Z"},
-//!   "sevenDay": {"utilization": 45.0, "resetsAt": "2025-01-05T00:00:00Z"},
-//!   "sevenDaySonnet": {"utilization": 30.0, "resetsAt": "2025-01-05T00:00:00Z"},
-//!   "extraUsage": {"isEnabled": true, "usedCredits": 500, "monthlyLimit": 10000}
+//!   "five_hour": { "utilization": 6.0, "resets_at": "2025-11-04T04:59:59.943648+00:00" },
+//!   "seven_day": { "utilization": 35.0, "resets_at": "2025-11-06T03:59:59.943679+00:00" },
+//!   "seven_day_opus": { "utilization": 0.0, "resets_at": null }
 //! }
 //! ```
 
 use chrono::{DateTime, Utc};
 use serde::Deserialize;
-use tracing::{debug, instrument, warn};
+use tracing::{debug, info, instrument, warn};
 
 use super::error::ClaudeError;
 use super::oauth::ClaudeOAuthCredentials;
@@ -31,21 +31,94 @@ use super::oauth::ClaudeOAuthCredentials;
 // Constants
 // ============================================================================
 
-/// Base URL for Claude API.
+/// Base URL for Anthropic API.
 pub const API_BASE_URL: &str = "https://api.anthropic.com";
 
-/// Usage endpoint.
-pub const USAGE_ENDPOINT: &str = "/v1/usage";
+/// OAuth usage endpoint.
+pub const USAGE_ENDPOINT: &str = "/api/oauth/usage";
 
-/// Alternative usage endpoint (claude.ai).
+/// The ESSENTIAL beta header for OAuth usage API.
+pub const ANTHROPIC_BETA_HEADER: &str = "oauth-2025-04-20";
+
+// ============================================================================
+// OAuth Usage API Response Structures
+// ============================================================================
+
+/// Response from the OAuth usage API.
+/// Note: Uses snake_case field names matching the actual API response.
+#[derive(Debug, Clone, Deserialize)]
+pub struct OAuthUsageResponse {
+    /// 5-hour usage window.
+    pub five_hour: Option<OAuthUsageWindow>,
+    /// 7-day usage window (all models).
+    pub seven_day: Option<OAuthUsageWindow>,
+    /// 7-day Opus usage window.
+    pub seven_day_opus: Option<OAuthUsageWindow>,
+    /// 7-day OAuth apps usage window (optional).
+    #[allow(dead_code)]
+    pub seven_day_oauth_apps: Option<OAuthUsageWindow>,
+}
+
+/// Individual usage window from OAuth API.
+#[derive(Debug, Clone, Deserialize)]
+pub struct OAuthUsageWindow {
+    /// Utilization percentage (0-100).
+    pub utilization: f64,
+    /// When this window resets (ISO 8601).
+    pub resets_at: Option<String>,
+}
+
 #[allow(dead_code)]
-pub const CLAUDE_AI_USAGE_ENDPOINT: &str = "https://claude.ai/api/organizations";
+impl OAuthUsageWindow {
+    /// Get the used percentage.
+    pub fn get_used_percent(&self) -> f64 {
+        self.utilization
+    }
+
+    /// Parse the reset timestamp.
+    pub fn get_resets_at(&self) -> Option<DateTime<Utc>> {
+        self.resets_at.as_ref().and_then(|s| {
+            DateTime::parse_from_rfc3339(s)
+                .ok()
+                .map(|dt| dt.with_timezone(&Utc))
+        })
+    }
+}
+
+impl OAuthUsageResponse {
+    /// Convert to UsageApiResponse for compatibility.
+    pub fn into_usage_api_response(self) -> UsageApiResponse {
+        UsageApiResponse {
+            five_hour: self.five_hour.map(|w| UsageWindow {
+                utilization: w.utilization,
+                resets_at: w.resets_at,
+                remaining: None,
+                used_percent: None,
+            }),
+            seven_day: self.seven_day.map(|w| UsageWindow {
+                utilization: w.utilization,
+                resets_at: w.resets_at,
+                remaining: None,
+                used_percent: None,
+            }),
+            // Map seven_day_opus to seven_day_sonnet for compatibility
+            seven_day_sonnet: self.seven_day_opus.map(|w| UsageWindow {
+                utilization: w.utilization,
+                resets_at: w.resets_at,
+                remaining: None,
+                used_percent: None,
+            }),
+            extra_usage: None,
+            account: None,
+        }
+    }
+}
 
 // ============================================================================
-// API Response Structures
+// Unified API Response Structures (for internal compatibility)
 // ============================================================================
 
-/// Response from the usage API.
+/// Unified response for internal usage.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageApiResponse {
@@ -53,7 +126,7 @@ pub struct UsageApiResponse {
     pub five_hour: Option<UsageWindow>,
     /// 7-day usage window (all models).
     pub seven_day: Option<UsageWindow>,
-    /// 7-day Sonnet usage window.
+    /// 7-day Sonnet/Opus usage window.
     pub seven_day_sonnet: Option<UsageWindow>,
     /// Extra usage/credits info.
     pub extra_usage: Option<ExtraUsage>,
@@ -61,7 +134,7 @@ pub struct UsageApiResponse {
     pub account: Option<AccountInfo>,
 }
 
-/// Individual usage window from API.
+/// Individual usage window.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UsageWindow {
@@ -121,6 +194,8 @@ pub struct ExtraUsage {
 pub struct AccountInfo {
     /// Account email.
     pub email: Option<String>,
+    /// Account name.
+    pub name: Option<String>,
     /// Plan name.
     pub plan: Option<String>,
     /// Organization name.
@@ -164,24 +239,24 @@ impl ClaudeApiClient {
         &self,
         credentials: &ClaudeOAuthCredentials,
     ) -> Result<UsageApiResponse, ClaudeError> {
-        if credentials.is_expired() {
-            return Err(ClaudeError::TokenExpired(
-                credentials
-                    .expires_at
-                    .map(|t| t.to_rfc3339())
-                    .unwrap_or_else(|| "unknown".to_string()),
-            ));
-        }
-
         let url = format!("{}{}", self.base_url, USAGE_ENDPOINT);
 
-        debug!(url = %url, "Fetching usage from API");
+        debug!(url = %url, "Fetching Claude usage via OAuth");
 
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .build()
+            .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
+
         let response = client
             .get(&url)
-            .header("Authorization", format!("Bearer {}", credentials.access_token))
+            .header(
+                "Authorization",
+                format!("Bearer {}", credentials.access_token),
+            )
+            .header("anthropic-beta", ANTHROPIC_BETA_HEADER) // ESSENTIAL!
             .header("Content-Type", "application/json")
+            .header("User-Agent", "claude-code/2.0.32")
+            .header("Accept", "application/json, text/plain, */*")
             .send()
             .await
             .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
@@ -201,10 +276,7 @@ impl ClaudeApiClient {
         if !status.is_success() {
             let body = response.text().await.unwrap_or_default();
             warn!(status = %status, body = %body, "API request failed");
-            return Err(ClaudeError::ApiError(format!(
-                "API returned status {}: {}",
-                status, body
-            )));
+            return Err(ClaudeError::ApiError(format!("HTTP {}: {}", status, body)));
         }
 
         let body = response
@@ -212,12 +284,28 @@ impl ClaudeApiClient {
             .await
             .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
 
-        debug!(len = body.len(), "Received API response");
+        debug!(response_length = body.len(), "Got API response");
+        info!(
+            "Raw OAuth usage response: {}",
+            &body[..body.len().min(2000)]
+        );
 
-        let usage: UsageApiResponse = serde_json::from_str(&body)
-            .map_err(|e| ClaudeError::ParseError(format!("Failed to parse response: {}", e)))?;
+        // Parse OAuth usage response
+        let oauth_response: OAuthUsageResponse = serde_json::from_str(&body).map_err(|e| {
+            ClaudeError::ParseError(format!(
+                "Failed to parse OAuth response: {} - body: {}",
+                e,
+                &body[..body.len().min(500)]
+            ))
+        })?;
 
-        Ok(usage)
+        info!(
+            "Parsed OAuth usage: five_hour={:?}, seven_day={:?}, seven_day_opus={:?}",
+            oauth_response.five_hour, oauth_response.seven_day, oauth_response.seven_day_opus
+        );
+
+        // Convert to UsageApiResponse for internal compatibility
+        Ok(oauth_response.into_usage_api_response())
     }
 
     /// Fetch usage using the access token directly.
@@ -230,13 +318,20 @@ impl ClaudeApiClient {
 
         debug!(url = %url, "Fetching usage from API with token");
 
-        let client = reqwest::Client::new();
+        let client = reqwest::Client::builder()
+            .build()
+            .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
+
         let response = client
             .get(&url)
             .header("Authorization", format!("Bearer {}", access_token))
+            .header("anthropic-beta", ANTHROPIC_BETA_HEADER) // ESSENTIAL!
             .header("Content-Type", "application/json")
+            .header("User-Agent", "claude-code/2.0.32")
+            .header("Accept", "application/json, text/plain, */*")
             .send()
-            .await?;
+            .await
+            .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
 
         let status = response.status();
 
@@ -247,13 +342,25 @@ impl ClaudeApiClient {
         }
 
         if !status.is_success() {
-            return Err(ClaudeError::ApiError(format!("Status: {}", status)));
+            let body = response.text().await.unwrap_or_default();
+            return Err(ClaudeError::ApiError(format!("HTTP {}: {}", status, body)));
         }
 
-        let body = response.text().await?;
-        let usage: UsageApiResponse = serde_json::from_str(&body)?;
+        let body = response
+            .text()
+            .await
+            .map_err(|e| ClaudeError::HttpError(e.to_string()))?;
 
-        Ok(usage)
+        debug!(
+            "Raw OAuth usage response: {}",
+            &body[..body.len().min(2000)]
+        );
+
+        // Parse OAuth usage response
+        let oauth_response: OAuthUsageResponse =
+            serde_json::from_str(&body).map_err(|e| ClaudeError::ParseError(e.to_string()))?;
+
+        Ok(oauth_response.into_usage_api_response())
     }
 }
 
@@ -289,7 +396,7 @@ impl UsageApiResponse {
             });
         }
 
-        // Tertiary = 7-day Sonnet window
+        // Tertiary = 7-day Opus window (mapped from seven_day_sonnet for compat)
         if let Some(ref window) = self.seven_day_sonnet {
             snapshot.tertiary = Some(exactobar_core::UsageWindow {
                 used_percent: window.get_used_percent(),
@@ -322,52 +429,65 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_parse_usage_response() {
+    fn test_parse_oauth_usage_response() {
         let json = r#"{
-            "fiveHour": {
-                "utilization": 25.5,
-                "resetsAt": "2025-01-01T12:00:00Z"
+            "five_hour": {
+                "utilization": 6.0,
+                "resets_at": "2025-11-04T04:59:59.943648+00:00"
             },
-            "sevenDay": {
-                "utilization": 45.0,
-                "resetsAt": "2025-01-05T00:00:00Z"
+            "seven_day": {
+                "utilization": 35.0,
+                "resets_at": "2025-11-06T03:59:59.943679+00:00"
             },
-            "sevenDaySonnet": {
-                "utilization": 30.0,
-                "resetsAt": "2025-01-05T00:00:00Z"
-            },
-            "extraUsage": {
-                "isEnabled": true,
-                "usedCredits": 500,
-                "monthlyLimit": 10000,
-                "currency": "USD"
-            },
-            "account": {
-                "email": "user@example.com",
-                "plan": "pro",
-                "organization": "Acme Inc"
+            "seven_day_opus": {
+                "utilization": 0.0,
+                "resets_at": null
             }
         }"#;
 
-        let response: UsageApiResponse = serde_json::from_str(json).unwrap();
+        let response: OAuthUsageResponse = serde_json::from_str(json).unwrap();
 
         let five_hour = response.five_hour.as_ref().unwrap();
-        assert!((five_hour.utilization - 25.5).abs() < 0.01);
+        assert!((five_hour.utilization - 6.0).abs() < 0.01);
         assert!(five_hour.get_resets_at().is_some());
 
         let seven_day = response.seven_day.as_ref().unwrap();
-        assert!((seven_day.utilization - 45.0).abs() < 0.01);
+        assert!((seven_day.utilization - 35.0).abs() < 0.01);
+        assert!(seven_day.get_resets_at().is_some());
 
-        let sonnet = response.seven_day_sonnet.as_ref().unwrap();
-        assert!((sonnet.utilization - 30.0).abs() < 0.01);
+        let opus = response.seven_day_opus.as_ref().unwrap();
+        assert!((opus.utilization - 0.0).abs() < 0.01);
+        assert!(opus.resets_at.is_none());
+    }
 
-        let extra = response.extra_usage.as_ref().unwrap();
-        assert_eq!(extra.is_enabled, Some(true));
-        assert!((extra.used_credits.unwrap() - 500.0).abs() < 0.01);
+    #[test]
+    fn test_oauth_to_usage_api_response() {
+        let oauth_response = OAuthUsageResponse {
+            five_hour: Some(OAuthUsageWindow {
+                utilization: 25.0,
+                resets_at: Some("2025-01-01T12:00:00Z".to_string()),
+            }),
+            seven_day: Some(OAuthUsageWindow {
+                utilization: 50.0,
+                resets_at: None,
+            }),
+            seven_day_opus: Some(OAuthUsageWindow {
+                utilization: 10.0,
+                resets_at: None,
+            }),
+            seven_day_oauth_apps: None,
+        };
 
-        let account = response.account.as_ref().unwrap();
-        assert_eq!(account.email, Some("user@example.com".to_string()));
-        assert_eq!(account.plan, Some("pro".to_string()));
+        let response = oauth_response.into_usage_api_response();
+
+        assert!(response.five_hour.is_some());
+        assert!((response.five_hour.as_ref().unwrap().utilization - 25.0).abs() < 0.01);
+
+        assert!(response.seven_day.is_some());
+        assert!((response.seven_day.as_ref().unwrap().utilization - 50.0).abs() < 0.01);
+
+        assert!(response.seven_day_sonnet.is_some());
+        assert!((response.seven_day_sonnet.as_ref().unwrap().utilization - 10.0).abs() < 0.01);
     }
 
     #[test]
@@ -419,6 +539,7 @@ mod tests {
             extra_usage: None,
             account: Some(AccountInfo {
                 email: Some("test@example.com".to_string()),
+                name: None,
                 plan: Some("pro".to_string()),
                 organization: None,
             }),
@@ -444,7 +565,7 @@ mod tests {
     #[test]
     fn test_client_creation() {
         let client = ClaudeApiClient::new();
-        assert_eq!(client.base_url, API_BASE_URL);
+        assert_eq!(client.base_url, "https://api.anthropic.com");
 
         let custom = ClaudeApiClient::with_base_url("https://custom.api.com");
         assert_eq!(custom.base_url, "https://custom.api.com");

@@ -3,9 +3,7 @@
 use async_trait::async_trait;
 #[allow(unused_imports)]
 use exactobar_core::{FetchSource, UsageSnapshot};
-use exactobar_fetch::{
-    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy,
-};
+use exactobar_fetch::{FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy};
 use tracing::{debug, instrument};
 
 use super::parser::parse_zai_response;
@@ -61,7 +59,9 @@ impl FetchStrategy for ZaiApiStrategy {
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(FetchError::AuthenticationFailed("API key rejected".to_string()));
+            return Err(FetchError::AuthenticationFailed(
+                "API key rejected".to_string(),
+            ));
         }
 
         if !response.status().is_success() {
@@ -71,7 +71,9 @@ impl FetchStrategy for ZaiApiStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_zai_response(&body)?;

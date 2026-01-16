@@ -1,12 +1,12 @@
 //! General settings pane.
 
 use exactobar_store::RefreshCadence;
-use gpui::*;
 use gpui::prelude::*;
+use gpui::*;
 
+use super::SettingsTheme;
 use crate::components::Toggle;
 use crate::state::AppState;
-use super::SettingsTheme;
 
 /// General settings pane.
 pub struct GeneralPane {
@@ -135,7 +135,11 @@ fn render_radio_option(
                 .h(px(16.0))
                 .rounded_full()
                 .border_2()
-                .border_color(if selected { theme.selected } else { theme.border })
+                .border_color(if selected {
+                    theme.selected
+                } else {
+                    theme.border
+                })
                 .flex()
                 .items_center()
                 .justify_center()
@@ -234,10 +238,9 @@ fn render_display_section(
                                 .child("Show Used Percent"),
                         )
                         .child(
-                            div()
-                                .text_xs()
-                                .text_color(theme.text_muted)
-                                .child("Progress bars show percent used instead of percent remaining"),
+                            div().text_xs().text_color(theme.text_muted).child(
+                                "Progress bars show percent used instead of percent remaining",
+                            ),
                         ),
                 )
                 .child(

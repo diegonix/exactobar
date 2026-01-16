@@ -16,7 +16,7 @@ use gpui::*;
 use smol::Timer;
 use tracing::{debug, error, info};
 
-use crate::notifications::{send_quota_notification, NotificationTracker};
+use crate::notifications::{NotificationTracker, send_quota_notification};
 use crate::state::{AppState, UsageModel};
 
 /// Global notification tracker for quota alerts.
@@ -50,7 +50,7 @@ fn tokio_runtime() -> &'static tokio::runtime::Runtime {
             .build()
             .expect(
                 "Failed to create Tokio runtime for fetch operations. \
-                This is unrecoverable - the application cannot fetch provider data."
+                This is unrecoverable - the application cannot fetch provider data.",
             )
     })
 }
@@ -109,13 +109,13 @@ pub fn spawn_refresh_task(cx: &mut App) {
 
 /// Executes a fetch operation on the Tokio runtime.
 /// This bridges the smol-based GPUI world with the tokio-based fetch world.
-/// 
+///
 /// **IMPORTANT**: All fetch operations MUST go through this function!
 /// The fetch/providers libraries use tokio::process::Command which requires
 /// a Tokio runtime. Calling them directly from smol will panic.
 pub async fn fetch_on_tokio(provider: ProviderKind) -> Result<UsageSnapshot, String> {
     let rt = tokio_runtime();
-    
+
     // Use spawn_blocking to run the tokio future on the tokio runtime
     // from within a smol context
     let result = smol::unblock(move || {
@@ -124,7 +124,7 @@ pub async fn fetch_on_tokio(provider: ProviderKind) -> Result<UsageSnapshot, Str
             if let Some(desc) = ProviderRegistry::get(provider) {
                 let pipeline = desc.build_pipeline(&ctx);
                 let outcome = pipeline.execute(&ctx).await;
-                
+
                 match outcome.result {
                     Ok(fetch_result) => {
                         debug!(
@@ -134,8 +134,32 @@ pub async fn fetch_on_tokio(provider: ProviderKind) -> Result<UsageSnapshot, Str
                         Ok(fetch_result.snapshot)
                     }
                     Err(e) => {
-                        error!("Provider {:?} fetch failed: {}", provider, e);
-                        Err(e.to_string())
+                        // Build detailed error message including all strategy failures
+                        let mut error_parts = vec![format!("Error: {}", e)];
+
+                        if !outcome.attempts.is_empty() {
+                            error_parts.push(String::new()); // blank line
+                            error_parts
+                                .push(format!("Strategies tried ({}):", outcome.attempts.len()));
+
+                            for attempt in &outcome.attempts {
+                                let status = if attempt.success { "✓" } else { "✗" };
+                                let error_info = attempt
+                                    .error
+                                    .as_ref()
+                                    .map(|e| format!(": {}", e))
+                                    .unwrap_or_default();
+
+                                error_parts.push(format!(
+                                    "  {} {} [{}]{}",
+                                    status, attempt.strategy_id, attempt.kind, error_info
+                                ));
+                            }
+                        }
+
+                        let detailed_error = error_parts.join("\n");
+                        error!("Provider {:?} fetch failed:\n{}", provider, detailed_error);
+                        Err(detailed_error)
                     }
                 }
             } else {
@@ -144,16 +168,12 @@ pub async fn fetch_on_tokio(provider: ProviderKind) -> Result<UsageSnapshot, Str
         })
     })
     .await;
-    
+
     result
 }
 
 /// Refreshes a single provider.
-async fn refresh_provider(
-    provider: ProviderKind,
-    usage: Entity<UsageModel>,
-    cx: &mut AsyncApp,
-) {
+async fn refresh_provider(provider: ProviderKind, usage: Entity<UsageModel>, cx: &mut AsyncApp) {
     debug!("Refreshing provider {:?}", provider);
 
     // Mark as refreshing
@@ -166,14 +186,13 @@ async fn refresh_provider(
     let result = fetch_on_tokio(provider).await;
 
     // Check if notifications are enabled before we move result
-    let notify_enabled = cx
-        .update(|cx| {
-            cx.global::<AppState>()
-                .settings
-                .read(cx)
-                .settings()
-                .session_quota_notifications_enabled
-        });
+    let notify_enabled = cx.update(|cx| {
+        cx.global::<AppState>()
+            .settings
+            .read(cx)
+            .settings()
+            .session_quota_notifications_enabled
+    });
 
     // Check for quota notifications on successful fetch
     if let Ok(ref snapshot) = result {

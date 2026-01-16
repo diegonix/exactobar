@@ -130,8 +130,7 @@ impl GeminiCredentials {
 
         debug!(path = %path.display(), "Loading Gemini credentials");
 
-        let content =
-            std::fs::read_to_string(&path).map_err(|_| GeminiError::NotLoggedIn)?;
+        let content = std::fs::read_to_string(&path).map_err(|_| GeminiError::NotLoggedIn)?;
 
         serde_json::from_str(&content)
             .map_err(|e| GeminiError::CredentialsParseError(e.to_string()))
@@ -139,9 +138,7 @@ impl GeminiCredentials {
 
     /// Check if the credentials file exists.
     pub fn exists() -> bool {
-        credentials_path()
-            .map(|p| p.exists())
-            .unwrap_or(false)
+        credentials_path().map(|p| p.exists()).unwrap_or(false)
     }
 
     /// Check if the access token is expired.
@@ -156,16 +153,12 @@ impl GeminiCredentials {
 
     /// Check if we have a refresh token.
     pub fn has_refresh_token(&self) -> bool {
-        self.refresh_token
-            .as_ref()
-            .is_some_and(|t| !t.is_empty())
+        self.refresh_token.as_ref().is_some_and(|t| !t.is_empty())
     }
 
     /// Check if we have a valid access token.
     pub fn has_access_token(&self) -> bool {
-        self.access_token
-            .as_ref()
-            .is_some_and(|t| !t.is_empty())
+        self.access_token.as_ref().is_some_and(|t| !t.is_empty())
     }
 }
 
@@ -438,10 +431,9 @@ impl GeminiProbe {
             )));
         }
 
-        let refresh_response: TokenRefreshResponse = response
-            .json()
-            .await
-            .map_err(|e| GeminiError::CredentialsParseError(format!("Invalid refresh response: {}", e)))?;
+        let refresh_response: TokenRefreshResponse = response.json().await.map_err(|e| {
+            GeminiError::CredentialsParseError(format!("Invalid refresh response: {}", e))
+        })?;
 
         info!("Successfully refreshed Gemini OAuth token");
 
@@ -538,6 +530,7 @@ impl Default for GeminiProbe {
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

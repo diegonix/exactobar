@@ -1,7 +1,9 @@
 //! Kiro fetch strategies.
 
 use async_trait::async_trait;
-use exactobar_fetch::{FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, ProcessError};
+use exactobar_fetch::{
+    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, ProcessError,
+};
 use tracing::{debug, instrument, warn};
 
 use super::cli::ensure_logged_in;
@@ -20,7 +22,9 @@ pub struct KiroCliStrategy {
 impl KiroCliStrategy {
     /// Create a new CLI strategy.
     pub fn new() -> Self {
-        Self { command: "kiro-cli" }
+        Self {
+            command: "kiro-cli",
+        }
     }
 }
 

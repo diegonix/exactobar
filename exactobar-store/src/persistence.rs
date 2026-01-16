@@ -2,7 +2,7 @@
 //!
 //! Handles loading and saving state to disk with proper security.
 
-use serde::{de::DeserializeOwned, Serialize};
+use serde::{Serialize, de::DeserializeOwned};
 use std::path::{Path, PathBuf};
 use tracing::{debug, warn};
 
@@ -20,14 +20,19 @@ use crate::error::StoreError;
 pub fn default_config_dir() -> PathBuf {
     #[cfg(target_os = "macos")]
     {
-        dirs::home_dir()
-            .map_or_else(|| PathBuf::from("."), |h| h.join("Library").join("Application Support").join("ExactoBar"))
+        dirs::home_dir().map_or_else(
+            || PathBuf::from("."),
+            |h| {
+                h.join("Library")
+                    .join("Application Support")
+                    .join("ExactoBar")
+            },
+        )
     }
 
     #[cfg(not(target_os = "macos"))]
     {
-        dirs::config_dir()
-            .map_or_else(|| PathBuf::from("."), |c| c.join("exactobar"))
+        dirs::config_dir().map_or_else(|| PathBuf::from("."), |c| c.join("exactobar"))
     }
 }
 
@@ -39,14 +44,15 @@ pub fn default_config_dir() -> PathBuf {
 pub fn default_cache_dir() -> PathBuf {
     #[cfg(target_os = "macos")]
     {
-        dirs::home_dir()
-            .map_or_else(|| PathBuf::from("."), |h| h.join("Library").join("Caches").join("ExactoBar"))
+        dirs::home_dir().map_or_else(
+            || PathBuf::from("."),
+            |h| h.join("Library").join("Caches").join("ExactoBar"),
+        )
     }
 
     #[cfg(not(target_os = "macos"))]
     {
-        dirs::cache_dir()
-            .map_or_else(|| PathBuf::from("."), |c| c.join("exactobar"))
+        dirs::cache_dir().map_or_else(|| PathBuf::from("."), |c| c.join("exactobar"))
     }
 }
 
@@ -71,12 +77,12 @@ pub fn default_cache_path() -> PathBuf {
 #[cfg(unix)]
 async fn set_restrictive_permissions(path: &Path) -> Result<(), StoreError> {
     use std::os::unix::fs::PermissionsExt;
-    
+
     let metadata = tokio::fs::metadata(path).await?;
     let mut perms = metadata.permissions();
     perms.set_mode(0o600); // Owner read/write only
     tokio::fs::set_permissions(path, perms).await?;
-    
+
     debug!(path = %path.display(), mode = "0600", "Set restrictive permissions");
     Ok(())
 }
@@ -87,12 +93,12 @@ async fn set_restrictive_permissions(path: &Path) -> Result<(), StoreError> {
 #[cfg(unix)]
 async fn set_restrictive_dir_permissions(path: &Path) -> Result<(), StoreError> {
     use std::os::unix::fs::PermissionsExt;
-    
+
     let metadata = tokio::fs::metadata(path).await?;
     let mut perms = metadata.permissions();
     perms.set_mode(0o700); // Owner read/write/execute only
     tokio::fs::set_permissions(path, perms).await?;
-    
+
     debug!(path = %path.display(), mode = "0700", "Set restrictive directory permissions");
     Ok(())
 }
@@ -122,10 +128,12 @@ async fn create_secure_parent_dirs(path: &Path) -> Result<(), StoreError> {
         if !parent.exists() {
             debug!(path = %parent.display(), "Creating secure directory");
             tokio::fs::create_dir_all(parent).await?;
-            
+
             // Set restrictive permissions on all created directories
             let mut current = parent.to_path_buf();
-            while current.starts_with(default_config_dir()) || current.starts_with(default_cache_dir()) {
+            while current.starts_with(default_config_dir())
+                || current.starts_with(default_cache_dir())
+            {
                 if current.exists() {
                     set_restrictive_dir_permissions(&current).await?;
                 }
@@ -227,16 +235,16 @@ mod tests {
     #[tokio::test]
     async fn test_file_permissions() {
         use std::os::unix::fs::PermissionsExt;
-        
+
         let temp_dir = tempfile::tempdir().unwrap();
         let test_file = temp_dir.path().join("test.json");
-        
+
         // Write a test file
         tokio::fs::write(&test_file, "{}").await.unwrap();
-        
+
         // Set restrictive permissions
         set_restrictive_permissions(&test_file).await.unwrap();
-        
+
         // Verify permissions
         let metadata = tokio::fs::metadata(&test_file).await.unwrap();
         let mode = metadata.permissions().mode() & 0o777;

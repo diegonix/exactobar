@@ -1,6 +1,8 @@
 //! Zai response parser.
 
-use exactobar_core::{FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow};
+use exactobar_core::{
+    FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
+};
 use exactobar_fetch::FetchError;
 use serde::Deserialize;
 use tracing::debug;
@@ -67,6 +69,7 @@ pub fn parse_zai_response(json_str: &str) -> Result<UsageSnapshot, FetchError> {
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

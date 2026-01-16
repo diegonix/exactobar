@@ -8,7 +8,7 @@ use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::{watch, RwLock};
+use tokio::sync::{RwLock, watch};
 use tracing::{debug, info, warn};
 
 use crate::error::StoreError;
@@ -26,7 +26,6 @@ pub struct Settings {
     // ========================================================================
     // Core Settings (existing)
     // ========================================================================
-
     /// Enabled providers.
     pub enabled_providers: HashSet<ProviderKind>,
 
@@ -57,7 +56,6 @@ pub struct Settings {
     // ========================================================================
     // Display Settings (new from CodexBar)
     // ========================================================================
-
     /// When true, progress bars show "percent used" instead of "percent remaining".
     pub usage_bars_show_used: bool,
 
@@ -73,7 +71,6 @@ pub struct Settings {
     // ========================================================================
     // Feature Toggles (new from CodexBar)
     // ========================================================================
-
     /// Enable status page checks for provider health.
     pub status_checks_enabled: bool,
 
@@ -98,7 +95,6 @@ pub struct Settings {
     // ========================================================================
     // Data Sources (new from CodexBar)
     // ========================================================================
-
     /// Codex usage data source mode.
     pub codex_usage_data_source: DataSourceMode,
 
@@ -108,7 +104,6 @@ pub struct Settings {
     // ========================================================================
     // Provider Order & Debug (new from CodexBar)
     // ========================================================================
-
     /// Provider display order in menu (empty = default order).
     pub provider_order: Vec<ProviderKind>,
 
@@ -520,12 +515,16 @@ impl SettingsStore {
 
     /// Gets whether menu bar shows brand icon with percent.
     pub async fn menu_bar_shows_brand_icon_with_percent(&self) -> bool {
-        self.settings.read().await.menu_bar_shows_brand_icon_with_percent
+        self.settings
+            .read()
+            .await
+            .menu_bar_shows_brand_icon_with_percent
     }
 
     /// Sets whether menu bar shows brand icon with percent.
     pub async fn set_menu_bar_shows_brand_icon_with_percent(&self, value: bool) {
-        self.update(|s| s.menu_bar_shows_brand_icon_with_percent = value).await;
+        self.update(|s| s.menu_bar_shows_brand_icon_with_percent = value)
+            .await;
     }
 
     /// Gets whether switcher shows provider icons.
@@ -554,12 +553,16 @@ impl SettingsStore {
 
     /// Gets whether session quota notifications are enabled.
     pub async fn session_quota_notifications_enabled(&self) -> bool {
-        self.settings.read().await.session_quota_notifications_enabled
+        self.settings
+            .read()
+            .await
+            .session_quota_notifications_enabled
     }
 
     /// Sets whether session quota notifications are enabled.
     pub async fn set_session_quota_notifications_enabled(&self, value: bool) {
-        self.update(|s| s.session_quota_notifications_enabled = value).await;
+        self.update(|s| s.session_quota_notifications_enabled = value)
+            .await;
     }
 
     /// Gets whether cost usage tracking is enabled.
@@ -594,12 +597,16 @@ impl SettingsStore {
 
     /// Gets whether optional credits/extra usage sections are shown.
     pub async fn show_optional_credits_and_extra_usage(&self) -> bool {
-        self.settings.read().await.show_optional_credits_and_extra_usage
+        self.settings
+            .read()
+            .await
+            .show_optional_credits_and_extra_usage
     }
 
     /// Sets whether optional credits/extra usage sections are shown.
     pub async fn set_show_optional_credits_and_extra_usage(&self, value: bool) {
-        self.update(|s| s.show_optional_credits_and_extra_usage = value).await;
+        self.update(|s| s.show_optional_credits_and_extra_usage = value)
+            .await;
     }
 
     /// Gets whether `OpenAI` web access is enabled.
@@ -697,10 +704,7 @@ impl SettingsStore {
     /// Sets the data source mode for a provider.
     pub async fn set_provider_source_mode(&self, provider: ProviderKind, mode: DataSourceMode) {
         self.update(|s| {
-            s.provider_settings
-                .entry(provider)
-                .or_default()
-                .source_mode = Some(mode);
+            s.provider_settings.entry(provider).or_default().source_mode = Some(mode);
         })
         .await;
     }
@@ -737,7 +741,8 @@ impl SettingsStore {
 
     /// Sets whether provider detection has completed.
     pub async fn set_provider_detection_completed(&self, value: bool) {
-        self.update(|s| s.provider_detection_completed = value).await;
+        self.update(|s| s.provider_detection_completed = value)
+            .await;
     }
 
     /// Gets the debug loading pattern.
@@ -866,14 +871,25 @@ mod tests {
         let store = SettingsStore::new(PathBuf::from("/tmp/test_cookie_source.json"));
 
         // Default should be Auto
-        assert_eq!(store.cookie_source(ProviderKind::Claude).await, CookieSource::Auto);
+        assert_eq!(
+            store.cookie_source(ProviderKind::Claude).await,
+            CookieSource::Auto
+        );
 
         // Set to Safari
-        store.set_cookie_source(ProviderKind::Claude, CookieSource::Safari).await;
-        assert_eq!(store.cookie_source(ProviderKind::Claude).await, CookieSource::Safari);
+        store
+            .set_cookie_source(ProviderKind::Claude, CookieSource::Safari)
+            .await;
+        assert_eq!(
+            store.cookie_source(ProviderKind::Claude).await,
+            CookieSource::Safari
+        );
 
         // Different provider should still be Auto
-        assert_eq!(store.cookie_source(ProviderKind::Codex).await, CookieSource::Auto);
+        assert_eq!(
+            store.cookie_source(ProviderKind::Codex).await,
+            CookieSource::Auto
+        );
     }
 
     #[tokio::test]

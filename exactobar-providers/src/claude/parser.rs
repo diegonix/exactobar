@@ -186,9 +186,9 @@ pub fn parse_claude_web_response(body: &str) -> Result<UsageSnapshot, FetchError
 /// Parses a ClaudeUsageData into a UsageWindow.
 fn parse_usage_data(data: ClaudeUsageData) -> UsageWindow {
     // Calculate used_percent from remaining if not provided directly
-    let used_percent = data.used_percent.unwrap_or_else(|| {
-        data.remaining.map(|r| 100.0 - r).unwrap_or(0.0)
-    });
+    let used_percent = data
+        .used_percent
+        .unwrap_or_else(|| data.remaining.map(|r| 100.0 - r).unwrap_or(0.0));
 
     let mut window = UsageWindow::new(used_percent);
     window.window_minutes = data.window;

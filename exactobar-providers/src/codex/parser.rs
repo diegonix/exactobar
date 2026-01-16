@@ -156,9 +156,8 @@ fn parse_usage_window(window: CodexUsageWindow) -> UsageWindow {
 #[allow(dead_code)]
 pub fn parse_codex_api_response(json_str: &str) -> Result<UsageSnapshot, FetchError> {
     // This just validates the response is valid JSON
-    let _: OpenAiModelsResponse = serde_json::from_str(json_str).map_err(|e| {
-        FetchError::InvalidResponse(format!("Invalid API response: {}", e))
-    })?;
+    let _: OpenAiModelsResponse = serde_json::from_str(json_str)
+        .map_err(|e| FetchError::InvalidResponse(format!("Invalid API response: {}", e)))?;
 
     // Return minimal snapshot - API doesn't provide usage data
     let mut snapshot = UsageSnapshot::new();

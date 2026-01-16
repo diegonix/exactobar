@@ -20,7 +20,8 @@ use super::error::AntigravityError;
 
 const PROCESS_NAME: &str = "language_server_macos";
 const GET_USER_STATUS_PATH: &str = "/exa.language_server_pb.LanguageServerService/GetUserStatus";
-const GET_COMMAND_MODEL_PATH: &str = "/exa.language_server_pb.LanguageServerService/GetCommandModelConfigs";
+const GET_COMMAND_MODEL_PATH: &str =
+    "/exa.language_server_pb.LanguageServerService/GetCommandModelConfigs";
 
 // ============================================================================
 // Process Detection
@@ -71,7 +72,8 @@ fn detect_process() -> Result<ProcessInfo, AntigravityError> {
 
         // Extract CSRF token
         if let Some(token) = extract_flag("--csrf_token", command) {
-            let port = extract_flag("--extension_server_port", command).and_then(|s| s.parse().ok());
+            let port =
+                extract_flag("--extension_server_port", command).and_then(|s| s.parse().ok());
 
             return Ok(ProcessInfo {
                 pid,
@@ -608,10 +610,7 @@ fn parse_user_status_response(
         .and_then(|d| d.client_model_configs)
         .unwrap_or_default();
 
-    let models = model_configs
-        .iter()
-        .filter_map(quota_from_config)
-        .collect();
+    let models = model_configs.iter().filter_map(quota_from_config).collect();
 
     let plan_name = user_status
         .plan_status
@@ -635,10 +634,7 @@ fn parse_command_model_response(
     }
 
     let model_configs = response.client_model_configs.unwrap_or_default();
-    let models = model_configs
-        .iter()
-        .filter_map(quota_from_config)
-        .collect();
+    let models = model_configs.iter().filter_map(quota_from_config).collect();
 
     Ok(AntigravitySnapshot {
         model_quotas: models,

@@ -16,7 +16,7 @@
 //! let flow = CopilotDeviceFlow::new();
 //! let start = flow.start().await?;
 //! println!("Go to {} and enter code: {}", start.verification_uri, start.user_code);
-//! 
+//!
 //! loop {
 //!     match flow.poll(&start.device_code).await? {
 //!         DeviceFlowResult::Pending => tokio::time::sleep(Duration::from_secs(start.interval)).await,
@@ -26,7 +26,7 @@
 //! }
 //! ```
 
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, CONTENT_TYPE};
+use reqwest::header::{ACCEPT, CONTENT_TYPE, HeaderMap, HeaderValue};
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument, warn};
 
@@ -292,8 +292,7 @@ impl CopilotDeviceFlow {
         on_start(&start);
 
         let interval = std::time::Duration::from_secs(start.interval.max(5));
-        let deadline =
-            std::time::Instant::now() + std::time::Duration::from_secs(start.expires_in);
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(start.expires_in);
 
         loop {
             if std::time::Instant::now() > deadline {
@@ -314,7 +313,7 @@ impl CopilotDeviceFlow {
                 DeviceFlowResult::AccessDenied => {
                     return Err(CopilotError::AuthenticationFailed(
                         "User denied access".to_string(),
-                    ))
+                    ));
                 }
             }
         }

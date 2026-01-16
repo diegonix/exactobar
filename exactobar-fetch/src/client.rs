@@ -2,7 +2,7 @@
 
 use crate::error::FetchError;
 use crate::retry::RetryStrategy;
-use reqwest::{header, Client, Response};
+use reqwest::{Client, Response, header};
 use std::time::Duration;
 use tracing::{debug, warn};
 
@@ -76,12 +76,9 @@ impl HttpClient {
                             .and_then(|v| v.parse().ok());
 
                         if attempts < max_attempts {
-                            let wait_time = retry_after
-                                .unwrap_or(self.retry_strategy.base_delay_secs);
-                            warn!(
-                                "Rate limited, waiting {} seconds before retry",
-                                wait_time
-                            );
+                            let wait_time =
+                                retry_after.unwrap_or(self.retry_strategy.base_delay_secs);
+                            warn!("Rate limited, waiting {} seconds before retry", wait_time);
                             tokio::time::sleep(Duration::from_secs(wait_time)).await;
                             continue;
                         }

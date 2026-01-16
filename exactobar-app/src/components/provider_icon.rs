@@ -36,6 +36,7 @@ impl ProviderIcon {
             ProviderKind::Kiro => hsla(39.0 / 360.0, 1.0, 0.50, 1.0),
             ProviderKind::MiniMax => hsla(195.0 / 360.0, 1.0, 0.50, 1.0),
             ProviderKind::Antigravity => hsla(282.0 / 360.0, 1.0, 0.41, 1.0),
+            ProviderKind::Synthetic => hsla(168.0 / 360.0, 1.0, 0.40, 1.0), // Teal
         }
     }
 
@@ -53,6 +54,7 @@ impl ProviderIcon {
             ProviderKind::Kiro => "K",
             ProviderKind::MiniMax => "M",
             ProviderKind::Antigravity => "∞",
+            ProviderKind::Synthetic => "S",
         }
     }
 }

@@ -1,6 +1,8 @@
 //! Factory response parser.
 
-use exactobar_core::{FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow};
+use exactobar_core::{
+    FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
+};
 use exactobar_fetch::FetchError;
 use serde::Deserialize;
 use tracing::debug;

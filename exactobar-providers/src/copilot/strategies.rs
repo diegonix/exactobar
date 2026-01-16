@@ -30,7 +30,11 @@ impl CopilotApiStrategy {
 
     async fn get_oauth_token(&self, ctx: &FetchContext) -> Option<String> {
         // Try keychain first
-        if let Ok(Some(token)) = ctx.keychain.get(services::GITHUB, accounts::OAUTH_TOKEN).await {
+        if let Ok(Some(token)) = ctx
+            .keychain
+            .get(services::GITHUB, accounts::OAUTH_TOKEN)
+            .await
+        {
             return Some(token);
         }
 
@@ -84,7 +88,9 @@ impl FetchStrategy for CopilotApiStrategy {
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(FetchError::AuthenticationFailed("Token rejected".to_string()));
+            return Err(FetchError::AuthenticationFailed(
+                "Token rejected".to_string(),
+            ));
         }
 
         if !response.status().is_success() {
@@ -94,7 +100,9 @@ impl FetchStrategy for CopilotApiStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_copilot_response(&body)?;
@@ -168,7 +176,9 @@ impl FetchStrategy for CopilotEnvStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_copilot_response(&body)?;

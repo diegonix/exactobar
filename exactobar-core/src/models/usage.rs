@@ -10,9 +10,9 @@
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
+use super::ProviderIdentity;
 use super::provider::ProviderKind;
 use super::status::FetchSource;
-use super::ProviderIdentity;
 use crate::error::CoreError;
 
 // ============================================================================
@@ -63,8 +63,14 @@ impl UsageSnapshot {
     /// Returns true if any window is approaching its limit (>80%).
     pub fn is_approaching_limit(&self) -> bool {
         self.primary.as_ref().is_some_and(|w| w.used_percent > 80.0)
-            || self.secondary.as_ref().is_some_and(|w| w.used_percent > 80.0)
-            || self.tertiary.as_ref().is_some_and(|w| w.used_percent > 80.0)
+            || self
+                .secondary
+                .as_ref()
+                .is_some_and(|w| w.used_percent > 80.0)
+            || self
+                .tertiary
+                .as_ref()
+                .is_some_and(|w| w.used_percent > 80.0)
     }
 
     /// Returns the highest usage percentage across all windows.
@@ -107,19 +113,19 @@ impl UsageSnapshot {
     /// invalid percentage values (negative, > 100, or non-finite).
     pub fn validate(&self) -> Result<(), CoreError> {
         if let Some(ref primary) = self.primary {
-            primary.validate().map_err(|e| {
-                CoreError::InvalidData(format!("primary window: {e}"))
-            })?;
+            primary
+                .validate()
+                .map_err(|e| CoreError::InvalidData(format!("primary window: {e}")))?;
         }
         if let Some(ref secondary) = self.secondary {
-            secondary.validate().map_err(|e| {
-                CoreError::InvalidData(format!("secondary window: {e}"))
-            })?;
+            secondary
+                .validate()
+                .map_err(|e| CoreError::InvalidData(format!("secondary window: {e}")))?;
         }
         if let Some(ref tertiary) = self.tertiary {
-            tertiary.validate().map_err(|e| {
-                CoreError::InvalidData(format!("tertiary window: {e}"))
-            })?;
+            tertiary
+                .validate()
+                .map_err(|e| CoreError::InvalidData(format!("tertiary window: {e}")))?;
         }
         Ok(())
     }
@@ -216,7 +222,7 @@ impl UsageWindow {
         }
         if !self.used_percent.is_finite() {
             return Err(CoreError::InvalidData(
-                "used_percent is not a finite number".to_string()
+                "used_percent is not a finite number".to_string(),
             ));
         }
         Ok(())
@@ -402,6 +408,7 @@ impl Quota {
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

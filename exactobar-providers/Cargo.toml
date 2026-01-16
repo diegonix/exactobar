@@ -10,6 +10,7 @@ description = "Provider implementations for ExactoBar"
 [dependencies]
 exactobar-core = { workspace = true }
 exactobar-fetch = { workspace = true }
+exactobar-store = { workspace = true }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -25,3 +26,4 @@ regex = { workspace = true }
 which = { workspace = true }
 rusqlite = { workspace = true }
 keyring = { workspace = true }
+whoami = "1.5"

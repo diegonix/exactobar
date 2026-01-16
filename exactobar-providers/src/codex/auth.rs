@@ -151,8 +151,9 @@ pub fn auth_file_exists() -> bool {
 /// Read and parse the auth.json file.
 #[instrument]
 pub fn read_auth_file() -> Result<AuthFile, CodexError> {
-    let path = auth_file_path()
-        .ok_or_else(|| CodexError::AuthNotFound("Could not determine home directory".to_string()))?;
+    let path = auth_file_path().ok_or_else(|| {
+        CodexError::AuthNotFound("Could not determine home directory".to_string())
+    })?;
 
     if !path.exists() {
         return Err(CodexError::AuthNotFound(path.display().to_string()));

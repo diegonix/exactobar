@@ -65,7 +65,7 @@ mod output;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand, ValueEnum};
-use tracing_subscriber::{fmt, prelude::*, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 use commands::{config, cost, providers, summary, usage, watch};
 

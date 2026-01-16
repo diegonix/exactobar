@@ -7,7 +7,7 @@ use async_trait::async_trait;
 #[allow(unused_imports)]
 use exactobar_core::{FetchSource, UsageSnapshot};
 use exactobar_fetch::{
-    host::browser::Browser, FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy,
+    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, host::browser::Browser,
 };
 use tracing::{debug, info, instrument, warn};
 
@@ -117,7 +117,9 @@ impl FetchStrategy for AugmentWebStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_augment_response(&body)?;

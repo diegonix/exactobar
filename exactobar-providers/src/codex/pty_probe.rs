@@ -44,10 +44,8 @@ const IDLE_TIMEOUT: Duration = Duration::from_secs(5);
 
 /// Patterns that indicate we should stop reading.
 const STOP_PATTERNS: &[&str] = &[
-    "Credits:",
-    "limit:", // After seeing limit info
-    "Error:",
-    "error:",
+    "Credits:", "limit:", // After seeing limit info
+    "Error:", "error:",
 ];
 
 // ============================================================================
@@ -67,22 +65,17 @@ static PERCENT_USED_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// Pattern for credits "Credits: $XX.XX" or "Credits: XX.XX"
-static CREDITS_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)credits\s*:\s*\$?(\d+(?:\.\d+)?)")
-        .expect("Invalid regex")
-});
+static CREDITS_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)credits\s*:\s*\$?(\d+(?:\.\d+)?)").expect("Invalid regex"));
 
 /// Pattern for account email.
 static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)(?:account|email)\s*:\s*([^\s]+@[^\s]+)")
-        .expect("Invalid regex")
+    Regex::new(r"(?i)(?:account|email)\s*:\s*([^\s]+@[^\s]+)").expect("Invalid regex")
 });
 
 /// Pattern for plan type.
-static PLAN_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(?i)plan\s*:\s*(\w+)")
-        .expect("Invalid regex")
-});
+static PLAN_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?i)plan\s*:\s*(\w+)").expect("Invalid regex"));
 
 // ============================================================================
 // Status Snapshot
@@ -279,23 +272,23 @@ pub fn parse_percent_used(line: &str) -> Option<(String, f64)> {
 
 /// Parse credits line.
 pub fn parse_credits(line: &str) -> Option<f64> {
-    CREDITS_RE.captures(line).and_then(|caps| {
-        caps.get(1)?.as_str().parse().ok()
-    })
+    CREDITS_RE
+        .captures(line)
+        .and_then(|caps| caps.get(1)?.as_str().parse().ok())
 }
 
 /// Parse email from line.
 pub fn parse_email(line: &str) -> Option<String> {
-    EMAIL_RE.captures(line).and_then(|caps| {
-        Some(caps.get(1)?.as_str().to_string())
-    })
+    EMAIL_RE
+        .captures(line)
+        .and_then(|caps| Some(caps.get(1)?.as_str().to_string()))
 }
 
 /// Parse plan from line.
 pub fn parse_plan(line: &str) -> Option<String> {
-    PLAN_RE.captures(line).and_then(|caps| {
-        Some(caps.get(1)?.as_str().to_string())
-    })
+    PLAN_RE
+        .captures(line)
+        .and_then(|caps| Some(caps.get(1)?.as_str().to_string()))
 }
 
 // ============================================================================

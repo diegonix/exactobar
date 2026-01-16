@@ -52,29 +52,29 @@ pub use error::CoreError;
 
 // Re-export all model types
 pub use models::{
+    // Cost tracking
+    CostUsageSnapshot,
+    // Usage types
+    Credits,
+    DailyUsageEntry,
+    // Status & Fetch
+    FetchSource,
     // Provider types
     IconStyle,
     LoginMethod,
+    ModelBreakdown,
     Provider,
     ProviderBranding,
     ProviderColor,
     ProviderIdentity,
     ProviderKind,
     ProviderMetadata,
-    // Usage types
-    Credits,
+    ProviderStatus,
     Quota,
+    StatusIndicator,
     UsageData,
     UsageSnapshot,
     UsageWindow,
-    // Cost tracking
-    CostUsageSnapshot,
-    DailyUsageEntry,
-    ModelBreakdown,
-    // Status & Fetch
-    FetchSource,
-    ProviderStatus,
-    StatusIndicator,
 };
 
 // Re-export traits

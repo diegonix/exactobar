@@ -156,9 +156,7 @@ impl DailyUsageEntry {
 
     /// Returns true if this entry has any token data.
     pub fn has_token_data(&self) -> bool {
-        self.input_tokens.is_some()
-            || self.output_tokens.is_some()
-            || self.total_tokens.is_some()
+        self.input_tokens.is_some() || self.output_tokens.is_some() || self.total_tokens.is_some()
     }
 }
 
@@ -201,6 +199,7 @@ impl ModelBreakdown {
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

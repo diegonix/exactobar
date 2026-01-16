@@ -121,9 +121,7 @@ impl KiroUsageResponse {
 
             let mut window = UsageWindow::new(bonus_percent);
             window.resets_at = expiry;
-            window.reset_description = self
-                .bonus_expiry_days
-                .map(|d| format!("expires in {}d", d));
+            window.reset_description = self.bonus_expiry_days.map(|d| format!("expires in {}d", d));
 
             snapshot.secondary = Some(window);
         } else if let Some(credits) = &self.credits {
@@ -178,6 +176,7 @@ pub fn parse_kiro_response(json_str: &str) -> Result<UsageSnapshot, FetchError> 
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 
@@ -221,12 +220,14 @@ mod tests {
         assert_eq!(snapshot.primary.as_ref().unwrap().used_percent, 50.0);
         assert!(snapshot.secondary.is_some());
         assert_eq!(snapshot.secondary.as_ref().unwrap().used_percent, 20.0);
-        assert!(snapshot
-            .secondary
-            .as_ref()
-            .unwrap()
-            .reset_description
-            .is_some());
+        assert!(
+            snapshot
+                .secondary
+                .as_ref()
+                .unwrap()
+                .reset_description
+                .is_some()
+        );
     }
 
     #[test]

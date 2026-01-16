@@ -32,11 +32,11 @@ impl UsageBar {
 
     fn fill_color(&self) -> Hsla {
         if self.percent > 50.0 {
-            hsla(142.0 / 360.0, 0.71, 0.45, 1.0)  // Green
+            hsla(142.0 / 360.0, 0.71, 0.45, 1.0) // Green
         } else if self.percent > 20.0 {
-            hsla(38.0 / 360.0, 0.92, 0.50, 1.0)   // Yellow
+            hsla(38.0 / 360.0, 0.92, 0.50, 1.0) // Yellow
         } else {
-            hsla(0.0, 0.84, 0.60, 1.0)            // Red
+            hsla(0.0, 0.84, 0.60, 1.0) // Red
         }
     }
 }

@@ -3,6 +3,8 @@
 #![allow(missing_docs)]
 #![warn(clippy::all)]
 #![warn(clippy::pedantic)]
+#![cfg_attr(test, allow(clippy::float_cmp))]
+#![cfg_attr(test, allow(clippy::needless_raw_string_hashes))]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
 #![allow(clippy::return_self_not_must_use)]
@@ -96,6 +98,7 @@ pub mod factory;
 pub mod gemini;
 pub mod kiro;
 pub mod minimax;
+pub mod synthetic;
 pub mod vertexai;
 pub mod zai;
 
@@ -116,6 +119,7 @@ pub use factory::factory_descriptor;
 pub use gemini::gemini_descriptor;
 pub use kiro::kiro_descriptor;
 pub use minimax::minimax_descriptor;
+pub use synthetic::synthetic_descriptor;
 pub use vertexai::vertexai_descriptor;
 pub use zai::zai_descriptor;
 
@@ -130,6 +134,7 @@ pub use factory::{FactoryLocalStrategy, FactoryWebStrategy};
 pub use gemini::{GeminiCliStrategy, GeminiOAuthStrategy};
 pub use kiro::KiroCliStrategy;
 pub use minimax::{MiniMaxLocalStrategy, MiniMaxWebStrategy};
+pub use synthetic::SyntheticApiStrategy;
 pub use vertexai::{VertexAILocalStrategy, VertexAIOAuthStrategy};
 pub use zai::ZaiApiStrategy;
 #[cfg(test)]

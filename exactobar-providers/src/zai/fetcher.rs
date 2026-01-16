@@ -4,8 +4,8 @@ use exactobar_core::UsageSnapshot;
 use tracing::{debug, info, instrument};
 
 use super::api::ZaiApiClient;
-use super::token_store::ZaiTokenStore;
 use super::error::ZaiError;
+use super::token_store::ZaiTokenStore;
 
 // ============================================================================
 // Fetcher

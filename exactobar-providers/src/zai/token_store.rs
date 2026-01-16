@@ -5,7 +5,7 @@
 //! 1. **Environment** - ZAI_API_TOKEN or ZAI_API_KEY
 //! 2. **Keychain** - Secure storage using OS keychain (exactobar:zai)
 
-use exactobar_fetch::host::keychain::{accounts, services, KeychainApi};
+use exactobar_fetch::host::keychain::{KeychainApi, accounts, services};
 use tracing::{debug, instrument};
 
 use super::error::ZaiError;
@@ -21,11 +21,7 @@ const ZAI_TOKEN_ENV: &str = "ZAI_API_TOKEN";
 const ZAI_KEY_ENV: &str = "ZAI_API_KEY";
 
 /// Legacy keychain service names to check (for migration compatibility).
-const LEGACY_KEYCHAIN_SERVICES: &[&str] = &[
-    "exactobar:zai",
-    "codexbar:zai",
-    "zai:api",
-];
+const LEGACY_KEYCHAIN_SERVICES: &[&str] = &["exactobar:zai", "codexbar:zai", "zai:api"];
 
 /// Legacy keychain account name.
 const LEGACY_KEYCHAIN_ACCOUNT: &str = "api_token";
@@ -57,9 +53,7 @@ impl ZaiTokenStore {
     /// 1. Environment variables (ZAI_API_TOKEN, ZAI_API_KEY)
     /// 2. Keychain (using provided keychain API)
     #[instrument(skip(keychain))]
-    pub async fn load_async<K: KeychainApi + ?Sized>(
-        keychain: &K,
-    ) -> Option<String> {
+    pub async fn load_async<K: KeychainApi + ?Sized>(keychain: &K) -> Option<String> {
         // Try environment first (fast path)
         if let Some(token) = Self::load_from_env() {
             debug!(source = "env", "Loaded z.ai token");
@@ -77,9 +71,7 @@ impl ZaiTokenStore {
 
     /// Load token from keychain using the async keychain API.
     #[instrument(skip(keychain))]
-    pub async fn load_from_keychain_async<K: KeychainApi + ?Sized>(
-        keychain: &K,
-    ) -> Option<String> {
+    pub async fn load_from_keychain_async<K: KeychainApi + ?Sized>(keychain: &K) -> Option<String> {
         // Try the standard exactobar keychain location
         if let Ok(Some(token)) = keychain.get(services::ZAI, accounts::API_KEY).await {
             if !token.is_empty() {
@@ -145,12 +137,21 @@ impl ZaiTokenStore {
     /// Load from keychain using keyring crate directly (sync).
     #[instrument]
     pub fn load_from_keychain_sync() -> Option<String> {
-        // Try all known service names for compatibility
+        // First, try the Settings UI keychain location (ExactoBar-zai)
+        if let Some(token) = exactobar_store::get_api_key("zai") {
+            debug!(
+                source = "settings-keychain",
+                "Found token in Settings keychain"
+            );
+            return Some(token);
+        }
+
+        // Fall back to legacy service names for compatibility
         for service in LEGACY_KEYCHAIN_SERVICES {
             if let Ok(entry) = keyring::Entry::new(service, LEGACY_KEYCHAIN_ACCOUNT) {
                 if let Ok(token) = entry.get_password() {
                     if !token.is_empty() {
-                        debug!(service = %service, "Found token in keychain");
+                        debug!(service = %service, "Found token in legacy keychain");
                         return Some(token);
                     }
                 }

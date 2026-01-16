@@ -1,6 +1,8 @@
 //! Augment response parser.
 
-use exactobar_core::{FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow};
+use exactobar_core::{
+    FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
+};
 use exactobar_fetch::FetchError;
 use serde::Deserialize;
 use tracing::debug;
@@ -46,7 +48,9 @@ pub fn parse_augment_response(json_str: &str) -> Result<UsageSnapshot, FetchErro
             snapshot.primary = Some(UsageWindow::new(percent));
         }
 
-        if let (Some(monthly_used), Some(monthly_total)) = (credits.monthly_used, credits.monthly_total) {
+        if let (Some(monthly_used), Some(monthly_total)) =
+            (credits.monthly_used, credits.monthly_total)
+        {
             let percent = if monthly_total > 0.0 {
                 (monthly_used / monthly_total) * 100.0
             } else {

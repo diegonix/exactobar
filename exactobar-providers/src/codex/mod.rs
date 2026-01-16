@@ -47,10 +47,10 @@ mod rpc;
 mod strategies;
 
 // Re-exports
-pub use auth::{read_account_info, try_read_account_info, AccountInfo};
+pub use auth::{AccountInfo, read_account_info, try_read_account_info};
 pub use descriptor::codex_descriptor;
 pub use error::CodexError;
 pub use fetcher::CodexUsageFetcher;
-pub use pty_probe::{parse_status_output, CodexPtyProbe, CodexStatusSnapshot};
+pub use pty_probe::{CodexPtyProbe, CodexStatusSnapshot, parse_status_output};
 pub use rpc::{CodexRpcClient, RateLimits, RateLimitsResult};
 pub use strategies::{CodexApiStrategy, CodexCliStrategy, CodexPtyStrategy, CodexRpcStrategy};

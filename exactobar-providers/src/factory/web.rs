@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use exactobar_core::{
     FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
 };
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, COOKIE, USER_AGENT};
+use reqwest::header::{ACCEPT, AUTHORIZATION, COOKIE, HeaderMap, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use tracing::{debug, instrument, warn};
 
@@ -30,12 +30,8 @@ const USER_ENDPOINT: &str = "/api/user";
 const USER_AGENT_VALUE: &str = "ExactoBar/1.0";
 
 /// Session cookie names.
-const SESSION_COOKIE_NAMES: &[&str] = &[
-    "__session",
-    "factory_session",
-    "workos_session",
-    "session",
-];
+const SESSION_COOKIE_NAMES: &[&str] =
+    &["__session", "factory_session", "workos_session", "session"];
 
 // ============================================================================
 // API Response Types
@@ -285,9 +281,8 @@ impl FactoryWebClient {
         }
 
         let body = response.text().await?;
-        let user: FactoryUserResponse = serde_json::from_str(&body).map_err(|e| {
-            FactoryError::InvalidResponse(format!("JSON error: {}", e))
-        })?;
+        let user: FactoryUserResponse = serde_json::from_str(&body)
+            .map_err(|e| FactoryError::InvalidResponse(format!("JSON error: {}", e)))?;
 
         Ok(user)
     }

@@ -3,8 +3,8 @@
 use exactobar_core::{IconStyle, ProviderBranding, ProviderColor, ProviderKind, ProviderMetadata};
 use exactobar_fetch::{FetchContext, FetchPipeline, SourceMode};
 
-use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 use super::strategies::{FactoryLocalStrategy, FactoryWebStrategy};
+use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 
 pub fn factory_descriptor() -> ProviderDescriptor {
     ProviderDescriptor {

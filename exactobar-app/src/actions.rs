@@ -37,11 +37,7 @@ pub fn quit(cx: &mut App) {
 }
 
 /// Refreshes a provider asynchronously.
-fn refresh_provider_async(
-    provider: ProviderKind,
-    usage: Entity<UsageModel>,
-    cx: &mut App,
-) {
+fn refresh_provider_async(provider: ProviderKind, usage: Entity<UsageModel>, cx: &mut App) {
     cx.spawn(async move |mut cx| {
         // Mark as refreshing
         let _ = cx.update_entity(&usage, |model, cx| {

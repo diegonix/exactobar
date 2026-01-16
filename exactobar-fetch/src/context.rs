@@ -277,10 +277,16 @@ impl FetchContextBuilder {
     /// Builds the fetch context.
     pub fn build(self) -> FetchContext {
         FetchContext {
-            keychain: self.keychain.unwrap_or_else(|| Arc::new(SystemKeychain::new())),
+            keychain: self
+                .keychain
+                .unwrap_or_else(|| Arc::new(SystemKeychain::new())),
             http: self.http.unwrap_or_else(|| Arc::new(HttpClient::new())),
-            process: self.process.unwrap_or_else(|| Arc::new(ProcessRunner::new())),
-            browser: self.browser.unwrap_or_else(|| Arc::new(BrowserCookieImporter::new())),
+            process: self
+                .process
+                .unwrap_or_else(|| Arc::new(ProcessRunner::new())),
+            browser: self
+                .browser
+                .unwrap_or_else(|| Arc::new(BrowserCookieImporter::new())),
             status: self.status.unwrap_or_else(|| Arc::new(StatusPoller::new())),
             settings: self.settings,
         }

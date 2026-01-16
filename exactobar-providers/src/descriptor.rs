@@ -186,8 +186,12 @@ impl ProviderDescriptorBuilder {
     pub fn build(self) -> ProviderDescriptor {
         ProviderDescriptor {
             id: self.id,
-            metadata: self.metadata.unwrap_or_else(|| ProviderMetadata::for_provider(self.id)),
-            branding: self.branding.unwrap_or_else(|| ProviderBranding::for_provider(self.id)),
+            metadata: self
+                .metadata
+                .unwrap_or_else(|| ProviderMetadata::for_provider(self.id)),
+            branding: self
+                .branding
+                .unwrap_or_else(|| ProviderBranding::for_provider(self.id)),
             token_cost: self.token_cost,
             fetch_plan: self.fetch_plan,
             cli: self.cli,

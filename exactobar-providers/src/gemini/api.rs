@@ -2,11 +2,10 @@
 //!
 //! This module provides HTTP client functionality for the Gemini API.
 
-
 use exactobar_core::{
     FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
 };
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT};
+use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use tracing::{debug, instrument, warn};
 
@@ -249,7 +248,9 @@ impl GeminiApiClient {
         let status = response.status();
 
         if status == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(GeminiError::AuthenticationFailed("Token rejected".to_string()));
+            return Err(GeminiError::AuthenticationFailed(
+                "Token rejected".to_string(),
+            ));
         }
 
         if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
@@ -309,7 +310,9 @@ impl GeminiApiClient {
         let status = response.status();
 
         if status == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(GeminiError::AuthenticationFailed("Token rejected".to_string()));
+            return Err(GeminiError::AuthenticationFailed(
+                "Token rejected".to_string(),
+            ));
         }
 
         if !status.is_success() {
@@ -438,6 +441,9 @@ mod tests {
         assert!(snapshot.identity.is_some());
         let identity = snapshot.identity.unwrap();
         assert_eq!(identity.account_email, Some("user@example.com".to_string()));
-        assert_eq!(identity.account_organization, Some("my-project".to_string()));
+        assert_eq!(
+            identity.account_organization,
+            Some("my-project".to_string())
+        );
     }
 }

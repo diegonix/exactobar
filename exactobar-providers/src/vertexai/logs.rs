@@ -82,9 +82,9 @@ impl TokenUsage {
     pub fn add_entry(&mut self, entry: &ClaudeLogEntry) {
         self.input_tokens += entry.input_tokens.unwrap_or(0);
         self.output_tokens += entry.output_tokens.unwrap_or(0);
-        self.total_tokens += entry.total_tokens.unwrap_or(
-            entry.input_tokens.unwrap_or(0) + entry.output_tokens.unwrap_or(0),
-        );
+        self.total_tokens += entry
+            .total_tokens
+            .unwrap_or(entry.input_tokens.unwrap_or(0) + entry.output_tokens.unwrap_or(0));
         self.total_cost_usd += entry.cost_usd.unwrap_or(0.0);
         self.request_count += 1;
 
@@ -146,22 +146,21 @@ impl ClaudeLogReader {
     pub fn read_usage(&self, since: Option<DateTime<Utc>>) -> Result<TokenUsage, VertexAIError> {
         debug!("Reading Claude logs");
 
-        let log_dir = Self::log_dir().ok_or_else(|| {
-            VertexAIError::LogNotFound("Log directory not found".to_string())
-        })?;
+        let log_dir = Self::log_dir()
+            .ok_or_else(|| VertexAIError::LogNotFound("Log directory not found".to_string()))?;
 
         if !log_dir.exists() {
-            return Err(VertexAIError::LogNotFound(
-                format!("Log directory does not exist: {}", log_dir.display()),
-            ));
+            return Err(VertexAIError::LogNotFound(format!(
+                "Log directory does not exist: {}",
+                log_dir.display()
+            )));
         }
 
         let mut usage = TokenUsage::default();
 
         // Read all .jsonl files
-        let entries = std::fs::read_dir(&log_dir).map_err(|e| {
-            VertexAIError::LogParseError(format!("Failed to read log dir: {}", e))
-        })?;
+        let entries = std::fs::read_dir(&log_dir)
+            .map_err(|e| VertexAIError::LogParseError(format!("Failed to read log dir: {}", e)))?;
 
         for entry in entries.flatten() {
             let path = entry.path();
@@ -188,9 +187,8 @@ impl ClaudeLogReader {
         usage: &mut TokenUsage,
         since: Option<DateTime<Utc>>,
     ) -> Result<(), VertexAIError> {
-        let content = std::fs::read_to_string(path).map_err(|e| {
-            VertexAIError::LogParseError(format!("Failed to read file: {}", e))
-        })?;
+        let content = std::fs::read_to_string(path)
+            .map_err(|e| VertexAIError::LogParseError(format!("Failed to read file: {}", e)))?;
 
         for line in content.lines() {
             if line.trim().is_empty() {
@@ -221,7 +219,9 @@ impl ClaudeLogReader {
 
     /// Read usage for today only.
     pub fn read_today_usage(&self) -> Result<TokenUsage, VertexAIError> {
-        let today_start = Utc::now().date_naive().and_hms_opt(0, 0, 0)
+        let today_start = Utc::now()
+            .date_naive()
+            .and_hms_opt(0, 0, 0)
             .map(|dt| dt.and_utc());
         self.read_usage(today_start)
     }

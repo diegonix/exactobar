@@ -3,10 +3,10 @@
 use exactobar_core::{IconStyle, ProviderBranding, ProviderColor, ProviderKind, ProviderMetadata};
 use exactobar_fetch::{FetchContext, FetchPipeline, SourceMode};
 
-use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 use super::strategies::{
     HailuoaiWebStrategy, MiniMaxLocalStorageStrategy, MiniMaxLocalStrategy, MiniMaxWebStrategy,
 };
+use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 
 pub fn minimax_descriptor() -> ProviderDescriptor {
     ProviderDescriptor {

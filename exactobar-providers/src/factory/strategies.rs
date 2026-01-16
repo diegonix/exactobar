@@ -4,7 +4,7 @@ use async_trait::async_trait;
 #[allow(unused_imports)]
 use exactobar_core::{FetchSource, UsageSnapshot};
 use exactobar_fetch::{
-    host::browser::Browser, FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy,
+    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, host::browser::Browser,
 };
 use std::path::PathBuf;
 use tracing::{debug, instrument};
@@ -74,7 +74,9 @@ impl FetchStrategy for FactoryWebStrategy {
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(FetchError::AuthenticationFailed("Cookies rejected".to_string()));
+            return Err(FetchError::AuthenticationFailed(
+                "Cookies rejected".to_string(),
+            ));
         }
 
         if !response.status().is_success() {
@@ -84,7 +86,9 @@ impl FetchStrategy for FactoryWebStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_factory_response(&body)?;

@@ -69,9 +69,7 @@ impl FetchStrategy for GeminiOAuthStrategy {
                 super::error::GeminiError::RefreshFailed(msg) => {
                     FetchError::AuthenticationFailed(format!("Token refresh failed: {}", msg))
                 }
-                super::error::GeminiError::InvalidResponse(msg) => {
-                    FetchError::InvalidResponse(msg)
-                }
+                super::error::GeminiError::InvalidResponse(msg) => FetchError::InvalidResponse(msg),
                 super::error::GeminiError::HttpError(msg) => {
                     FetchError::AuthenticationFailed(format!("HTTP error: {}", msg))
                 }

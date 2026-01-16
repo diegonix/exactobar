@@ -3,8 +3,8 @@
 use exactobar_core::{IconStyle, ProviderBranding, ProviderColor, ProviderKind, ProviderMetadata};
 use exactobar_fetch::{FetchContext, FetchPipeline, SourceMode};
 
-use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 use super::strategies::{CopilotApiStrategy, CopilotEnvStrategy};
+use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
 
 pub fn copilot_descriptor() -> ProviderDescriptor {
     ProviderDescriptor {

@@ -9,9 +9,9 @@
 
 use async_trait::async_trait;
 use exactobar_fetch::{
-    host::browser::Browser, FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy,
+    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, host::browser::Browser,
 };
-use tracing::{debug, instrument};
+use tracing::{debug, info, instrument};
 
 use super::api::ClaudeApiClient;
 use super::fetcher::ClaudeUsageFetcher;
@@ -77,7 +77,18 @@ impl FetchStrategy for ClaudeOAuthStrategy {
             .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
+        // Debug logging to trace data flow
+        info!(
+            "OAuth API Response: five_hour={:?}, seven_day={:?}, seven_day_sonnet={:?}",
+            response.five_hour, response.seven_day, response.seven_day_sonnet
+        );
+
         let snapshot = response.to_snapshot();
+
+        info!(
+            "OAuth Snapshot: primary={:?}, secondary={:?}, tertiary={:?}",
+            snapshot.primary, snapshot.secondary, snapshot.tertiary
+        );
 
         Ok(FetchResult::new(snapshot, self.id(), self.kind()))
     }
@@ -135,10 +146,11 @@ impl FetchStrategy for ClaudePtyStrategy {
         debug!("Fetching Claude usage via PTY");
 
         let fetcher = ClaudeUsageFetcher::cli_only();
-        let snapshot = fetcher
-            .fetch_usage()
-            .await
-            .map_err(|e| FetchError::Process(exactobar_fetch::ProcessError::ExecutionFailed(e.to_string())))?;
+        let snapshot = fetcher.fetch_usage().await.map_err(|e| {
+            FetchError::Process(exactobar_fetch::ProcessError::ExecutionFailed(
+                e.to_string(),
+            ))
+        })?;
 
         Ok(FetchResult::new(snapshot, self.id(), self.kind()))
     }

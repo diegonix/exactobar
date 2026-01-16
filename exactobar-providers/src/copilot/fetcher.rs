@@ -85,7 +85,10 @@ impl CopilotUsageFetcher {
     /// Detect the installed gh CLI version.
     #[instrument]
     pub fn detect_gh_version() -> Option<String> {
-        let output = std::process::Command::new("gh").arg("--version").output().ok()?;
+        let output = std::process::Command::new("gh")
+            .arg("--version")
+            .output()
+            .ok()?;
 
         if !output.status.success() {
             return None;

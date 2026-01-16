@@ -152,10 +152,7 @@ impl StatusPoller {
     }
 
     /// Fetch status from multiple URLs and return the worst status.
-    pub async fn fetch_worst_status(
-        &self,
-        urls: &[&str],
-    ) -> Result<ProviderStatus, StatusError> {
+    pub async fn fetch_worst_status(&self, urls: &[&str]) -> Result<ProviderStatus, StatusError> {
         let mut worst_indicator = StatusIndicator::None;
         let mut worst_description = "All systems operational".to_string();
         let mut first_url = None;
@@ -301,8 +298,17 @@ mod tests {
 
     #[test]
     fn test_page_url_for_provider() {
-        assert_eq!(urls::page_url_for_provider("codex"), Some(urls::OPENAI_PAGE));
-        assert_eq!(urls::page_url_for_provider("cursor"), Some(urls::CURSOR_PAGE));
-        assert_eq!(urls::page_url_for_provider("gemini"), Some(urls::GOOGLE_CLOUD_PAGE));
+        assert_eq!(
+            urls::page_url_for_provider("codex"),
+            Some(urls::OPENAI_PAGE)
+        );
+        assert_eq!(
+            urls::page_url_for_provider("cursor"),
+            Some(urls::CURSOR_PAGE)
+        );
+        assert_eq!(
+            urls::page_url_for_provider("gemini"),
+            Some(urls::GOOGLE_CLOUD_PAGE)
+        );
     }
 }

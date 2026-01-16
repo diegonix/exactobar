@@ -7,17 +7,18 @@ use exactobar_core::ProviderKind;
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use crate::descriptor::ProviderDescriptor;
 use crate::antigravity::antigravity_descriptor;
 use crate::augment::augment_descriptor;
 use crate::claude::claude_descriptor;
 use crate::codex::codex_descriptor;
 use crate::copilot::copilot_descriptor;
 use crate::cursor::cursor_descriptor;
+use crate::descriptor::ProviderDescriptor;
 use crate::factory::factory_descriptor;
 use crate::gemini::gemini_descriptor;
 use crate::kiro::kiro_descriptor;
 use crate::minimax::minimax_descriptor;
+use crate::synthetic::synthetic_descriptor;
 use crate::vertexai::vertexai_descriptor;
 use crate::zai::zai_descriptor;
 
@@ -56,6 +57,7 @@ fn init_descriptors() -> Vec<ProviderDescriptor> {
         kiro_descriptor(),
         minimax_descriptor(),
         antigravity_descriptor(),
+        synthetic_descriptor(),
     ]
 }
 
@@ -152,9 +154,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_registry_all_12_providers() {
+    fn test_registry_all_13_providers() {
         let all = ProviderRegistry::all();
-        assert_eq!(all.len(), 12, "Should have exactly 12 providers");
+        assert_eq!(all.len(), 13, "Should have exactly 13 providers");
     }
 
     #[test]
@@ -173,6 +175,7 @@ mod tests {
             ProviderKind::Kiro,
             ProviderKind::MiniMax,
             ProviderKind::Antigravity,
+            ProviderKind::Synthetic,
         ];
 
         for kind in kinds {
@@ -228,12 +231,12 @@ mod tests {
 
     #[test]
     fn test_provider_count() {
-        assert_eq!(ProviderRegistry::count(), 12);
+        assert_eq!(ProviderRegistry::count(), 13);
     }
 
     #[test]
     fn test_all_kinds_returned() {
         let kinds = ProviderRegistry::kinds();
-        assert_eq!(kinds.len(), 12);
+        assert_eq!(kinds.len(), 13);
     }
 }

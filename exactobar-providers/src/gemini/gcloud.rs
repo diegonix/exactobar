@@ -40,7 +40,8 @@ const GOOGLE_TOKEN_URL: &str = "https://oauth2.googleapis.com/token";
 
 /// Default client ID for gcloud.
 #[allow(dead_code)]
-const GCLOUD_CLIENT_ID: &str = "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com";
+const GCLOUD_CLIENT_ID: &str =
+    "764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com";
 
 /// Default client secret for gcloud (not really secret).
 #[allow(dead_code)]
@@ -217,7 +218,9 @@ impl GcloudCredentials {
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
         } else {
-            Err(GeminiError::GcloudError("Could not get account".to_string()))
+            Err(GeminiError::GcloudError(
+                "Could not get account".to_string(),
+            ))
         }
     }
 
@@ -232,7 +235,9 @@ impl GcloudCredentials {
         if output.status.success() {
             Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
         } else {
-            Err(GeminiError::GcloudError("Could not get project".to_string()))
+            Err(GeminiError::GcloudError(
+                "Could not get project".to_string(),
+            ))
         }
     }
 
@@ -270,11 +275,7 @@ impl GcloudCredentials {
             ("grant_type", "refresh_token"),
         ];
 
-        let response = client
-            .post(GOOGLE_TOKEN_URL)
-            .form(&params)
-            .send()
-            .await?;
+        let response = client.post(GOOGLE_TOKEN_URL).form(&params).send().await?;
 
         if !response.status().is_success() {
             let body = response.text().await.unwrap_or_default();
@@ -355,7 +356,11 @@ impl GcloudCredentials {
 
         // Default location
         let config_dir = dirs::config_dir()?;
-        Some(config_dir.join("gcloud").join("application_default_credentials.json"))
+        Some(
+            config_dir
+                .join("gcloud")
+                .join("application_default_credentials.json"),
+        )
     }
 
     /// Get the path to credentials.db.

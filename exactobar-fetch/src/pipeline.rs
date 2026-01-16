@@ -133,7 +133,8 @@ impl FetchPipeline {
 
     /// Sorts strategies by priority (highest first).
     fn sort_by_priority(&mut self) {
-        self.strategies.sort_by_key(|b| std::cmp::Reverse(b.priority()));
+        self.strategies
+            .sort_by_key(|b| std::cmp::Reverse(b.priority()));
     }
 
     /// Returns the number of strategies in the pipeline.
@@ -447,9 +448,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_single_success() {
-        let pipeline = FetchPipeline::with_strategies(vec![
-            Box::new(MockSuccessStrategy::new("test.success", true)),
-        ]);
+        let pipeline = FetchPipeline::with_strategies(vec![Box::new(MockSuccessStrategy::new(
+            "test.success",
+            true,
+        ))]);
 
         let ctx = FetchContext::new();
         let outcome = pipeline.execute(&ctx).await;

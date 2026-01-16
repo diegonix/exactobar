@@ -16,6 +16,7 @@ thiserror = { workspace = true }
 tracing = { workspace = true }
 chrono = { workspace = true }
 dirs = { workspace = true }
+keyring = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3"

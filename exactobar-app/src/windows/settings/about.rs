@@ -67,7 +67,9 @@ impl IntoElement for AboutPane {
                     .text_color(theme.text_muted)
                     .text_center()
                     .max_w(px(350.0))
-                    .child("A macOS menu bar app for monitoring LLM provider usage. Built with GPUI."),
+                    .child(
+                        "A macOS menu bar app for monitoring LLM provider usage. Built with GPUI.",
+                    ),
             )
             .child(
                 div()

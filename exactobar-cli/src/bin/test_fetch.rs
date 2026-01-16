@@ -80,7 +80,11 @@ async fn main() {
                         println!("  Resets: {}", desc);
                     }
                     if let Some(mins) = primary.window_minutes {
-                        println!("  Window: {} minutes ({:.1} hours)", mins, mins as f64 / 60.0);
+                        println!(
+                            "  Window: {} minutes ({:.1} hours)",
+                            mins,
+                            mins as f64 / 60.0
+                        );
                     }
                 }
 

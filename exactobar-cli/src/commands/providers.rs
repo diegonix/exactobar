@@ -32,7 +32,10 @@ pub async fn run(cli: &Cli) -> Result<()> {
             println!(
                 "Total: {} providers ({} primary)",
                 providers.len(),
-                providers.iter().filter(|d| d.metadata.is_primary_provider).count()
+                providers
+                    .iter()
+                    .filter(|d| d.metadata.is_primary_provider)
+                    .count()
             );
         }
         OutputFormat::Json => {

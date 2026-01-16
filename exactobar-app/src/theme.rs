@@ -79,6 +79,11 @@ pub fn error() -> Hsla {
     hsla(0.0, 0.72, 0.51, 1.0) // Red
 }
 
+/// Surface color for buttons/controls - semi-transparent dark.
+pub fn surface() -> Hsla {
+    hsla(0.0, 0.0, 0.15, 0.5) // Semi-transparent dark surface
+}
+
 /// Track color for progress bars - subtle on dark background.
 pub fn track() -> Hsla {
     hsla(0.0, 0.0, 1.0, 0.15) // Subtle white track for dark mode
@@ -94,18 +99,47 @@ pub fn liquid_card_background() -> Hsla {
     hsla(0.0, 0.0, 1.0, 0.05) // 5% white - barely visible
 }
 
-/// Returns the appropriate color for a usage percentage.
-/// - >50% remaining = success (green)
-/// - >20% remaining = warning (yellow)
-/// - <=20% remaining = error (red)
-pub fn color_for_percent(percent_remaining: f64) -> Hsla {
-    if percent_remaining > 50.0 {
-        success()
-    } else if percent_remaining > 20.0 {
-        warning()
+/// Returns the appropriate color for a usage percentage (USED, not remaining).
+/// Green = low usage (good), Red = high usage (warning)
+/// Smooth gradient: Green (0%) → Yellow (50%) → Orange (80%) → Red (100%)
+pub fn color_for_usage(used_percent: f64) -> Hsla {
+    let used = used_percent as f32;
+    if used < 50.0 {
+        // Green to Yellow (0-50%)
+        let t = used / 50.0;
+        hsla(
+            (120.0 - t * 60.0) / 360.0, // Hue: 120 (green) → 60 (yellow)
+            0.7,
+            0.45,
+            1.0,
+        )
+    } else if used < 80.0 {
+        // Yellow to Orange (50-80%)
+        let t = (used - 50.0) / 30.0;
+        hsla(
+            (60.0 - t * 30.0) / 360.0, // Hue: 60 (yellow) → 30 (orange)
+            0.8,
+            0.5,
+            1.0,
+        )
     } else {
-        error()
+        // Orange to Red (80-100%)
+        let t = (used - 80.0) / 20.0;
+        hsla(
+            (30.0 - t * 30.0) / 360.0, // Hue: 30 (orange) → 0 (red)
+            0.85,
+            0.5,
+            1.0,
+        )
     }
+}
+
+/// Deprecated: Use color_for_usage() instead.
+/// Kept for backwards compatibility.
+#[deprecated(note = "Use color_for_usage() instead - inverted to show used percentage")]
+pub fn color_for_percent(percent_remaining: f64) -> Hsla {
+    // Convert remaining to used and use the new function
+    color_for_usage(100.0 - percent_remaining)
 }
 
 // ============================================================================
@@ -149,17 +183,17 @@ impl ExactoBarTheme {
     pub fn usage_colors(&self) -> UsageColors {
         if self.dark_mode {
             UsageColors {
-                good: hsla(142.0 / 360.0, 0.71, 0.45, 1.0),       // Green
-                warning: hsla(38.0 / 360.0, 0.92, 0.50, 1.0),     // Yellow
-                danger: hsla(0.0, 0.84, 0.60, 1.0),               // Red
-                background: hsla(0.0, 0.0, 0.25, 1.0),            // Dark gray
+                good: hsla(142.0 / 360.0, 0.71, 0.45, 1.0),   // Green
+                warning: hsla(38.0 / 360.0, 0.92, 0.50, 1.0), // Yellow
+                danger: hsla(0.0, 0.84, 0.60, 1.0),           // Red
+                background: hsla(0.0, 0.0, 0.25, 1.0),        // Dark gray
             }
         } else {
             UsageColors {
-                good: hsla(142.0 / 360.0, 0.71, 0.45, 1.0),       // Green
-                warning: hsla(38.0 / 360.0, 0.92, 0.50, 1.0),     // Orange
-                danger: hsla(0.0, 0.84, 0.50, 1.0),               // Red
-                background: hsla(0.0, 0.0, 0.90, 1.0),            // Light gray
+                good: hsla(142.0 / 360.0, 0.71, 0.45, 1.0),   // Green
+                warning: hsla(38.0 / 360.0, 0.92, 0.50, 1.0), // Orange
+                danger: hsla(0.0, 0.84, 0.50, 1.0),           // Red
+                background: hsla(0.0, 0.0, 0.90, 1.0),        // Light gray
             }
         }
     }
@@ -174,15 +208,22 @@ pub struct UsageColors {
 }
 
 impl UsageColors {
-    /// Gets the color for a given percentage remaining.
-    pub fn for_percent(&self, percent: f32) -> Hsla {
-        if percent > 50.0 {
+    /// Gets the color for a given USAGE percentage (not remaining!).
+    /// Green = low usage (good), Red = high usage (warning)
+    pub fn for_usage(&self, used_percent: f32) -> Hsla {
+        if used_percent < 50.0 {
             self.good
-        } else if percent > 20.0 {
+        } else if used_percent < 80.0 {
             self.warning
         } else {
             self.danger
         }
+    }
+
+    /// Deprecated: Use for_usage() instead.
+    #[deprecated(note = "Use for_usage() instead - inverted to show used percentage")]
+    pub fn for_percent(&self, percent_remaining: f32) -> Hsla {
+        self.for_usage(100.0 - percent_remaining)
     }
 }
 
@@ -195,70 +236,37 @@ fn provider_colors() -> HashMap<ProviderKind, Hsla> {
     let mut map = HashMap::new();
 
     // OpenAI / Codex - Green
-    map.insert(
-        ProviderKind::Codex,
-        hsla(160.0 / 360.0, 0.82, 0.35, 1.0),
-    );
+    map.insert(ProviderKind::Codex, hsla(160.0 / 360.0, 0.82, 0.35, 1.0));
 
     // Anthropic / Claude - Orange/Tan
-    map.insert(
-        ProviderKind::Claude,
-        hsla(25.0 / 360.0, 0.55, 0.53, 1.0),
-    );
+    map.insert(ProviderKind::Claude, hsla(25.0 / 360.0, 0.55, 0.53, 1.0));
 
     // Cursor - Purple
-    map.insert(
-        ProviderKind::Cursor,
-        hsla(265.0 / 360.0, 0.70, 0.60, 1.0),
-    );
+    map.insert(ProviderKind::Cursor, hsla(265.0 / 360.0, 0.70, 0.60, 1.0));
 
     // Gemini - Google Blue
-    map.insert(
-        ProviderKind::Gemini,
-        hsla(217.0 / 360.0, 0.91, 0.60, 1.0),
-    );
+    map.insert(ProviderKind::Gemini, hsla(217.0 / 360.0, 0.91, 0.60, 1.0));
 
     // Copilot - GitHub Dark
-    map.insert(
-        ProviderKind::Copilot,
-        hsla(215.0 / 360.0, 0.14, 0.34, 1.0),
-    );
+    map.insert(ProviderKind::Copilot, hsla(215.0 / 360.0, 0.14, 0.34, 1.0));
 
     // Factory/Droid - Red
-    map.insert(
-        ProviderKind::Factory,
-        hsla(0.0, 0.70, 0.60, 1.0),
-    );
+    map.insert(ProviderKind::Factory, hsla(0.0, 0.70, 0.60, 1.0));
 
     // Vertex AI - Google Blue
-    map.insert(
-        ProviderKind::VertexAI,
-        hsla(217.0 / 360.0, 0.91, 0.60, 1.0),
-    );
+    map.insert(ProviderKind::VertexAI, hsla(217.0 / 360.0, 0.91, 0.60, 1.0));
 
     // z.ai - Gray
-    map.insert(
-        ProviderKind::Zai,
-        hsla(0.0, 0.0, 0.40, 1.0),
-    );
+    map.insert(ProviderKind::Zai, hsla(0.0, 0.0, 0.40, 1.0));
 
     // Augment - Indigo
-    map.insert(
-        ProviderKind::Augment,
-        hsla(275.0 / 360.0, 1.0, 0.25, 1.0),
-    );
+    map.insert(ProviderKind::Augment, hsla(275.0 / 360.0, 1.0, 0.25, 1.0));
 
     // Kiro - Orange
-    map.insert(
-        ProviderKind::Kiro,
-        hsla(39.0 / 360.0, 1.0, 0.50, 1.0),
-    );
+    map.insert(ProviderKind::Kiro, hsla(39.0 / 360.0, 1.0, 0.50, 1.0));
 
     // MiniMax - Sky Blue
-    map.insert(
-        ProviderKind::MiniMax,
-        hsla(195.0 / 360.0, 1.0, 0.50, 1.0),
-    );
+    map.insert(ProviderKind::MiniMax, hsla(195.0 / 360.0, 1.0, 0.50, 1.0));
 
     // Antigravity - Violet
     map.insert(
@@ -275,22 +283,12 @@ fn provider_colors() -> HashMap<ProviderKind, Hsla> {
 
 /// Lightens a color by the given amount.
 pub fn lighten(color: Hsla, amount: f32) -> Hsla {
-    hsla(
-        color.h,
-        color.s,
-        (color.l + amount).min(1.0),
-        color.a,
-    )
+    hsla(color.h, color.s, (color.l + amount).min(1.0), color.a)
 }
 
 /// Darkens a color by the given amount.
 pub fn darken(color: Hsla, amount: f32) -> Hsla {
-    hsla(
-        color.h,
-        color.s,
-        (color.l - amount).max(0.0),
-        color.a,
-    )
+    hsla(color.h, color.s, (color.l - amount).max(0.0), color.a)
 }
 
 /// Creates a transparent version of a color.

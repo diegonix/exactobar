@@ -176,9 +176,8 @@ struct LogEntry {
 
 impl LogEntry {
     fn total_tokens(&self) -> u64 {
-        self.total_tokens.unwrap_or_else(|| {
-            self.input_tokens.unwrap_or(0) + self.output_tokens.unwrap_or(0)
-        })
+        self.total_tokens
+            .unwrap_or_else(|| self.input_tokens.unwrap_or(0) + self.output_tokens.unwrap_or(0))
     }
 }
 
@@ -210,7 +209,7 @@ fn parse_cost_providers(arg: &str) -> Result<Vec<ProviderKind>> {
 /// Outputs cost results.
 fn output_cost_results(
     results: &HashMap<ProviderKind, CostUsageSnapshot>,
-_args: &CostArgs,
+    _args: &CostArgs,
     cli: &Cli,
 ) -> Result<()> {
     if results.is_empty() {

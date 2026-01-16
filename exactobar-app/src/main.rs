@@ -22,7 +22,6 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::map_unwrap_or)]
 #![allow(clippy::let_unit_value)]
-
 #![allow(clippy::redundant_closure_for_method_calls)]
 #![allow(clippy::needless_borrow)]
 #![allow(clippy::match_single_binding)]
@@ -71,10 +70,11 @@ mod refresh;
 mod state;
 mod theme;
 mod tray;
+mod updater;
 mod windows;
 
 use gpui::*;
-use tracing::{info, Level};
+use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
 
 use crate::state::AppState;
@@ -109,6 +109,11 @@ fn main() {
             tray.start_click_listener(cx);
         });
 
+        // Start the animation timer for eye blink and "surprise me" animations
+        cx.update_global::<SystemTray, _>(|tray, cx| {
+            tray.start_animation_timer(cx);
+        });
+
         // Debug: write icon PNG to temp file for verification
         #[cfg(debug_assertions)]
         {
@@ -127,6 +132,9 @@ fn main() {
         // Start background refresh task
         refresh::spawn_refresh_task(cx);
 
+        // Check for updates after a short delay (don't block startup)
+        spawn_update_check(cx);
+
         // Check for onboarding - open settings if no providers
         if should_show_onboarding(cx) {
             windows::open_settings(cx);
@@ -140,4 +148,34 @@ fn main() {
 fn should_show_onboarding(cx: &App) -> bool {
     let state = cx.global::<AppState>();
     state.enabled_providers(cx).is_empty()
+}
+
+/// Spawns a background task to check for updates after a delay.
+///
+/// This runs 5 seconds after startup to avoid blocking the initial load.
+fn spawn_update_check(cx: &mut App) {
+    cx.spawn(async move |mut cx| {
+        // Wait 5 seconds before checking for updates
+        smol::Timer::after(std::time::Duration::from_secs(5)).await;
+
+        info!("Starting background update check...");
+
+        let result = crate::updater::check_for_updates().await;
+
+        if let crate::updater::UpdateCheckResult::UpdateAvailable {
+            ref current,
+            ref latest,
+            ..
+        } = result
+        {
+            // Show system notification about the update
+            crate::updater::show_update_notification(current, latest);
+
+            // Show the update dialog
+            let _ = cx.update(|cx| {
+                crate::windows::show_update_dialog(&result, cx);
+            });
+        }
+    })
+    .detach();
 }

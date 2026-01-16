@@ -22,6 +22,6 @@ pub use strategies::{
     HailuoaiWebStrategy, MiniMaxLocalStorageStrategy, MiniMaxLocalStrategy, MiniMaxWebStrategy,
 };
 pub use web::{
-    MiniMaxLocalStorage, MiniMaxTokenStore, MiniMaxUsageResponse, MiniMaxWebClient,
-    HAILUOAI_DOMAIN, MINIMAX_DOMAIN,
+    HAILUOAI_DOMAIN, MINIMAX_DOMAIN, MiniMaxLocalStorage, MiniMaxTokenStore, MiniMaxUsageResponse,
+    MiniMaxWebClient,
 };

@@ -38,17 +38,20 @@
 //! ```
 
 pub mod error;
+pub mod keychain;
 pub mod persistence;
 pub mod settings_store;
 pub mod usage_store;
 
 pub use error::StoreError;
+pub use keychain::{delete_api_key, get_api_key, has_api_key, store_api_key};
 pub use persistence::{
-    default_cache_dir, default_cache_path, default_config_dir, default_settings_path,
-    load_json, load_json_or_default, save_json,
+    default_cache_dir, default_cache_path, default_config_dir, default_settings_path, load_json,
+    load_json_or_default, save_json,
 };
 pub use settings_store::{
-    CookieSource, DataSourceMode, LogLevel, ProviderSettings, RefreshCadence, Settings, SettingsStore,
+    CookieSource, DataSourceMode, LogLevel, ProviderSettings, RefreshCadence, Settings,
+    SettingsStore,
 };
 pub use usage_store::{CostUsageSnapshot, DailyCost, UsageStore};
 #[cfg(test)]

@@ -171,7 +171,12 @@ impl GeminiPtyProbe {
         }
 
         let output = tokio::process::Command::new("gcloud")
-            .args(["auth", "list", "--filter=status:ACTIVE", "--format=value(account)"])
+            .args([
+                "auth",
+                "list",
+                "--filter=status:ACTIVE",
+                "--format=value(account)",
+            ])
             .output()
             .await;
 

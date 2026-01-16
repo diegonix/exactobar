@@ -6,7 +6,7 @@
 #[cfg(target_os = "macos")]
 use cocoa::appkit::NSSquareStatusItemLength;
 #[cfg(target_os = "macos")]
-use cocoa::base::{id, nil, YES};
+use cocoa::base::{YES, id, nil};
 #[cfg(target_os = "macos")]
 use cocoa::foundation::{NSSize, NSString};
 #[cfg(target_os = "macos")]
@@ -24,7 +24,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::{self, Receiver, Sender};
 use tracing::{debug, info, warn};
 
-use crate::icon::{IconRenderer, RenderMode, RenderedIcon};
+use crate::icon::{IconAnimationState, IconRenderer, RenderMode, RenderedIcon};
 use crate::menu::TrayMenu;
 use crate::state::AppState;
 
@@ -127,9 +127,7 @@ fn create_delegate(sender: &Sender<StatusItemClickEvent>, provider: Option<Provi
         (*delegate).set_ivar("sender_ptr", sender_ptr);
 
         // Store the provider index (255 = none/merged)
-        let provider_index: u8 = provider
-            .map(|p| p.to_index() as u8)
-            .unwrap_or(255);
+        let provider_index: u8 = provider.map(|p| p.to_index() as u8).unwrap_or(255);
         (*delegate).set_ivar("provider_index", provider_index);
 
         delegate
@@ -176,6 +174,15 @@ pub struct SystemTray {
 
     /// Loading animation phase.
     loading_phase: f64,
+
+    /// Animation states per provider.
+    animation_states: HashMap<ProviderKind, IconAnimationState>,
+
+    /// Whether "surprise me" mode (random animations) is enabled.
+    surprise_me_enabled: bool,
+
+    /// Time since last random animation event.
+    last_random_event: std::time::Instant,
 }
 
 impl Global for SystemTray {}
@@ -189,6 +196,7 @@ impl SystemTray {
     pub fn new(cx: &mut App) -> Self {
         let state = cx.global::<AppState>();
         let merge_mode = state.settings.read(cx).merge_icons();
+        let surprise_me_enabled = state.settings.read(cx).random_blink_enabled();
         let providers = state.enabled_providers(cx);
 
         // Use template mode for macOS menu bar (automatic dark/light mode)
@@ -198,6 +206,12 @@ impl SystemTray {
         // Box the sender so it has a stable heap address (survives struct moves)
         let (click_sender, click_receiver) = mpsc::channel();
         let click_sender = Box::new(click_sender);
+
+        // Initialize animation states for all providers
+        let mut animation_states = HashMap::new();
+        for provider in &providers {
+            animation_states.insert(*provider, IconAnimationState::default());
+        }
 
         let mut tray = Self {
             status_items: HashMap::new(),
@@ -209,6 +223,9 @@ impl SystemTray {
             merge_mode,
             menu_window: None,
             loading_phase: 0.0,
+            animation_states,
+            surprise_me_enabled,
+            last_random_event: std::time::Instant::now(),
         };
 
         // Create native status items
@@ -279,13 +296,15 @@ impl SystemTray {
             let state = cx.global::<AppState>();
             let snapshot = state.get_snapshot(provider, cx);
             let status = state.get_status(provider, cx);
-            let status_indicator = status
-                .map(|s| s.indicator)
-                .unwrap_or(StatusIndicator::None);
+            let status_indicator = status.map(|s| s.indicator).unwrap_or(StatusIndicator::None);
 
-            let rendered = self
-                .renderer
-                .render(provider, snapshot.as_ref(), false, Some(status_indicator));
+            let rendered = self.renderer.render(
+                provider,
+                snapshot.as_ref(),
+                false,
+                Some(status_indicator),
+                None,
+            );
 
             // Set the icon image
             self.set_status_item_image(status_item, &rendered);
@@ -328,7 +347,9 @@ impl SystemTray {
                 let _: () = msg_send![status_item, retain];
 
                 let snapshot = state.get_snapshot(*first, cx);
-                let rendered = self.renderer.render(*first, snapshot.as_ref(), false, None);
+                let rendered = self
+                    .renderer
+                    .render(*first, snapshot.as_ref(), false, None, None);
                 self.set_status_item_image(status_item, &rendered);
 
                 // Create delegate for handling clicks (provider=None for merged)
@@ -406,18 +427,24 @@ impl SystemTray {
             chrono::Utc::now() - s.updated_at > threshold
         });
 
+        // Get animation state for this provider
+        let animation = self.animation_states.get(&provider);
+
         let rendered = if is_refreshing {
             self.loading_phase += 0.1;
             self.renderer.render_loading(provider, self.loading_phase)
         } else if has_error {
             self.renderer.render_error(provider)
         } else {
-            let status_indicator = status
-                .map(|s| s.indicator)
-                .unwrap_or(StatusIndicator::None);
+            let status_indicator = status.map(|s| s.indicator).unwrap_or(StatusIndicator::None);
 
-            self.renderer
-                .render(provider, snapshot.as_ref(), stale, Some(status_indicator))
+            self.renderer.render(
+                provider,
+                snapshot.as_ref(),
+                stale,
+                Some(status_indicator),
+                animation,
+            )
         };
 
         if self.merge_mode {
@@ -440,6 +467,165 @@ impl SystemTray {
             self.update_icon(provider, cx);
         }
     }
+
+    // ========================================================================
+    // Animation Methods
+    // ========================================================================
+
+    /// Triggers a blink animation for a provider.
+    ///
+    /// The blink starts with the eye closed (blink_phase = 1.0) and
+    /// gradually opens as tick_animations decays the phase.
+    pub fn trigger_blink(&mut self, provider: ProviderKind, cx: &mut App) {
+        if let Some(state) = self.animation_states.get_mut(&provider) {
+            state.blink_phase = 1.0; // Start closed
+        }
+        self.update_icon(provider, cx);
+    }
+
+    /// Updates animation states (called each frame by the animation timer).
+    ///
+    /// Decays blink phase so the eye opens back up, and decays wiggle/tilt
+    /// for "surprise me" animations.
+    fn tick_animations(&mut self, delta_seconds: f32, cx: &mut App) {
+        let mut needs_update = Vec::new();
+
+        for (provider, state) in &mut self.animation_states {
+            let mut changed = false;
+
+            // Decay blink phase (eye opens back up)
+            // Speed: 3.0 means full blink cycle takes ~0.33 seconds
+            if state.blink_phase > 0.0 {
+                state.blink_phase = (state.blink_phase - delta_seconds * 3.0).max(0.0);
+                changed = true;
+            }
+
+            // Decay wiggle offset (damped oscillation)
+            if state.wiggle_offset.abs() > 0.01 {
+                state.wiggle_offset *= 0.9_f32.powf(delta_seconds * 60.0); // Frame-rate independent
+                changed = true;
+            } else {
+                state.wiggle_offset = 0.0;
+            }
+
+            // Decay tilt (damped oscillation)
+            if state.tilt_degrees.abs() > 0.1 {
+                state.tilt_degrees *= 0.9_f32.powf(delta_seconds * 60.0);
+                changed = true;
+            } else {
+                state.tilt_degrees = 0.0;
+            }
+
+            if changed {
+                needs_update.push(*provider);
+            }
+        }
+
+        // Only update icons that have active animations
+        for provider in needs_update {
+            self.update_icon(provider, cx);
+        }
+    }
+
+    /// Maybe trigger a random animation if "surprise me" is enabled.
+    ///
+    /// Called periodically by the animation timer. Has a chance to trigger
+    /// a random blink, wiggle, or tilt on a random provider.
+    fn maybe_random_animation(&mut self, cx: &mut App) {
+        if !self.surprise_me_enabled {
+            return;
+        }
+
+        // Only check every ~30 seconds
+        if self.last_random_event.elapsed() < std::time::Duration::from_secs(30) {
+            return;
+        }
+
+        // 30% chance to trigger when the cooldown expires
+        if rand::random::<f32>() >= 0.3 {
+            self.last_random_event = std::time::Instant::now();
+            return;
+        }
+
+        // Pick a random enabled provider
+        let providers: Vec<_> = self.animation_states.keys().copied().collect();
+        if providers.is_empty() {
+            self.last_random_event = std::time::Instant::now();
+            return;
+        }
+
+        let provider = providers[rand::random::<usize>() % providers.len()];
+
+        // Random animation type
+        match rand::random::<u8>() % 3 {
+            0 => {
+                // Blink
+                debug!(provider = ?provider, "Random blink triggered");
+                self.trigger_blink(provider, cx);
+            }
+            1 => {
+                // Wiggle
+                if let Some(state) = self.animation_states.get_mut(&provider) {
+                    state.wiggle_offset = (rand::random::<f32>() - 0.5) * 4.0;
+                    debug!(provider = ?provider, wiggle = state.wiggle_offset, "Random wiggle triggered");
+                }
+            }
+            _ => {
+                // Tilt
+                if let Some(state) = self.animation_states.get_mut(&provider) {
+                    state.tilt_degrees = (rand::random::<f32>() - 0.5) * 10.0;
+                    debug!(provider = ?provider, tilt = state.tilt_degrees, "Random tilt triggered");
+                }
+            }
+        }
+
+        self.last_random_event = std::time::Instant::now();
+    }
+
+    /// Starts the animation tick timer.
+    ///
+    /// Spawns a background task that runs at ~30fps and updates animation
+    /// states. Only performs work when animations are actually active.
+    pub fn start_animation_timer(&mut self, cx: &mut App) {
+        cx.spawn(async move |mut cx| {
+            let mut last_tick = std::time::Instant::now();
+
+            loop {
+                // ~30fps is smooth enough for blink animations
+                smol::Timer::after(std::time::Duration::from_millis(33)).await;
+
+                let now = std::time::Instant::now();
+                let delta = (now - last_tick).as_secs_f32();
+                last_tick = now;
+
+                // Update animations in the global SystemTray
+                let _ = cx.update_global::<SystemTray, _>(|tray, cx| {
+                    tray.tick_animations(delta, cx);
+                    tray.maybe_random_animation(cx);
+                });
+            }
+        })
+        .detach();
+
+        info!("Animation timer started (~30fps)");
+    }
+
+    /// Updates the "surprise me" (random animation) setting.
+    pub fn set_surprise_me_enabled(&mut self, enabled: bool) {
+        self.surprise_me_enabled = enabled;
+        info!(surprise_me = enabled, "Surprise me mode changed");
+    }
+
+    /// Ensures a provider has an animation state entry.
+    ///
+    /// Called when a new provider is added.
+    fn ensure_animation_state(&mut self, provider: ProviderKind) {
+        self.animation_states.entry(provider).or_default();
+    }
+
+    // ========================================================================
+    // Mode Switching
+    // ========================================================================
 
     /// Toggles merge mode.
     pub fn set_merge_mode(&mut self, merge: bool, cx: &mut App) {
@@ -468,6 +654,9 @@ impl SystemTray {
 
     /// Adds a provider to the tray.
     pub fn add_provider(&mut self, provider: ProviderKind, cx: &mut App) {
+        // Ensure animation state exists for this provider
+        self.ensure_animation_state(provider);
+
         if !self.merge_mode && !self.status_items.contains_key(&provider) {
             self.create_status_item(provider, cx);
         }
@@ -475,6 +664,9 @@ impl SystemTray {
 
     /// Removes a provider from the tray.
     pub fn remove_provider(&mut self, provider: ProviderKind) {
+        // Clean up animation state
+        self.animation_states.remove(&provider);
+
         if let Some(status_item) = self.status_items.remove(&provider) {
             unsafe {
                 let status_bar: id = msg_send![class!(NSStatusBar), systemStatusBar];
@@ -532,7 +724,7 @@ impl SystemTray {
 
         let menu = TrayMenu::new(provider);
 
-        let menu_width = 340.0_f32;  // Match MenuPanel width
+        let menu_width = 340.0_f32; // Match MenuPanel width
         let menu_height = 450.0_f32;
 
         // Get screen dimensions for coordinate conversion (macOS -> GPUI)
@@ -572,9 +764,14 @@ impl SystemTray {
             (menu_x, menu_y)
         } else {
             // Fallback: Position at RIGHT edge of screen, just below menu bar
-            let menu_x = screen_width - menu_width - 10.0;  // 10px from right edge
-            let menu_y = 30.0;  // Just below menu bar
-            info!(fallback = true, x = menu_x, y = menu_y, "Using fallback position");
+            let menu_x = screen_width - menu_width - 10.0; // 10px from right edge
+            let menu_y = 30.0; // Just below menu bar
+            info!(
+                fallback = true,
+                x = menu_x,
+                y = menu_y,
+                "Using fallback position"
+            );
             (menu_x, menu_y)
         };
 
@@ -615,7 +812,10 @@ impl SystemTray {
     ///
     /// Returns the screen coordinates where the status item is displayed,
     /// useful for positioning popup windows.
-    fn get_status_item_frame(&self, provider: Option<ProviderKind>) -> Option<(f32, f32, f32, f32)> {
+    fn get_status_item_frame(
+        &self,
+        provider: Option<ProviderKind>,
+    ) -> Option<(f32, f32, f32, f32)> {
         unsafe {
             let status_item = if self.merge_mode {
                 self.merged_status_item?
@@ -664,7 +864,9 @@ impl SystemTray {
     pub fn get_icon_png(&self, provider: ProviderKind, cx: &App) -> Option<Vec<u8>> {
         let state = cx.global::<AppState>();
         let snapshot = state.get_snapshot(provider, cx);
-        let rendered = self.renderer.render(provider, snapshot.as_ref(), false, None);
+        let rendered = self
+            .renderer
+            .render(provider, snapshot.as_ref(), false, None, None);
         Some(rendered.to_png())
     }
 }
@@ -688,22 +890,28 @@ impl SystemTray {
         warn!("System tray is only supported on macOS");
         let (click_sender, click_receiver) = mpsc::channel();
         Self {
-            click_sender,
+            click_sender: Box::new(click_sender),
             click_receiver: Some(click_receiver),
             renderer: IconRenderer::new(),
             merge_mode: false,
             menu_window: None,
             loading_phase: 0.0,
+            animation_states: HashMap::new(),
+            surprise_me_enabled: false,
+            last_random_event: std::time::Instant::now(),
         }
     }
 
     pub fn start_click_listener(&mut self, _cx: &mut App) {}
+    pub fn start_animation_timer(&mut self, _cx: &mut App) {}
     pub fn update_icon(&mut self, _provider: ProviderKind, _cx: &mut App) {}
     pub fn update_all(&mut self, _cx: &mut App) {}
     pub fn set_merge_mode(&mut self, _merge: bool, _cx: &mut App) {}
     pub fn add_provider(&mut self, _provider: ProviderKind, _cx: &mut App) {}
     pub fn remove_provider(&mut self, _provider: ProviderKind) {}
     pub fn toggle_menu(&mut self, _provider: Option<ProviderKind>, _cx: &mut App) {}
+    pub fn trigger_blink(&mut self, _provider: ProviderKind, _cx: &mut App) {}
+    pub fn set_surprise_me_enabled(&mut self, _enabled: bool) {}
     pub fn get_icon_png(&self, _provider: ProviderKind, _cx: &App) -> Option<Vec<u8>> {
         None
     }

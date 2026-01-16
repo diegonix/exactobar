@@ -172,6 +172,18 @@ impl ClaudeOAuthCredentials {
     pub fn load_from_keychain() -> Result<Self, ClaudeError> {
         debug!("Trying to load from keychain");
 
+        // Try with current username first (Claude CLI stores credentials this way)
+        let username = whoami::username();
+        debug!(account = %username, "Trying keychain with username");
+        if let Ok(entry) = keyring::Entry::new(KEYCHAIN_SERVICE, &username) {
+            if let Ok(secret) = entry.get_password() {
+                debug!("Found credentials with username account");
+                return Self::parse_credentials(&secret, CredentialSource::Keychain);
+            }
+        }
+
+        // Fall back to empty account (legacy)
+        debug!("Trying keychain with empty account");
         let entry = keyring::Entry::new(KEYCHAIN_SERVICE, KEYCHAIN_ACCOUNT)
             .map_err(|e: keyring::Error| ClaudeError::CredentialsLoadError(e.to_string()))?;
 
@@ -212,8 +224,9 @@ impl ClaudeOAuthCredentials {
     /// Load credentials from file.
     #[instrument]
     pub fn load_from_file() -> Result<Self, ClaudeError> {
-        let path = credentials_file_path()
-            .ok_or_else(|| ClaudeError::CredentialsLoadError("Could not determine home directory".to_string()))?;
+        let path = credentials_file_path().ok_or_else(|| {
+            ClaudeError::CredentialsLoadError("Could not determine home directory".to_string())
+        })?;
 
         if !path.exists() {
             return Err(ClaudeError::CredentialsNotFound);
@@ -241,18 +254,16 @@ impl ClaudeOAuthCredentials {
             return Ok(Self::from_data(oauth, source));
         }
 
-        Err(ClaudeError::CredentialsLoadError("Invalid credentials format".to_string()))
+        Err(ClaudeError::CredentialsLoadError(
+            "Invalid credentials format".to_string(),
+        ))
     }
 
     /// Convert raw data to validated credentials.
     fn from_data(data: OAuthCredentialsData, source: CredentialSource) -> Self {
         let expires_at = data.expires_at.and_then(|ts| {
             // Timestamp might be in milliseconds
-            let secs = if ts > 10_000_000_000 {
-                ts / 1000
-            } else {
-                ts
-            };
+            let secs = if ts > 10_000_000_000 { ts / 1000 } else { ts };
             Utc.timestamp_opt(secs, 0).single()
         });
 
@@ -308,7 +319,8 @@ mod tests {
             }
         }"#;
 
-        let creds = ClaudeOAuthCredentials::parse_credentials(json, CredentialSource::File).unwrap();
+        let creds =
+            ClaudeOAuthCredentials::parse_credentials(json, CredentialSource::File).unwrap();
 
         assert_eq!(creds.access_token, "test-token");
         assert_eq!(creds.refresh_token, Some("refresh-token".to_string()));
@@ -325,7 +337,8 @@ mod tests {
             "expiresAt": 1735000000
         }"#;
 
-        let creds = ClaudeOAuthCredentials::parse_credentials(json, CredentialSource::Keychain).unwrap();
+        let creds =
+            ClaudeOAuthCredentials::parse_credentials(json, CredentialSource::Keychain).unwrap();
         assert_eq!(creds.access_token, "direct-token");
     }
 

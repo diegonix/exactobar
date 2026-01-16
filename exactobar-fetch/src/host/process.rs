@@ -90,8 +90,13 @@ impl ProcessRunner {
         args: &[&str],
         env: &[(&str, &str)],
     ) -> Result<ProcessOutput, ProcessError> {
-        self.run_internal(cmd, args, env, Some(Duration::from_secs(DEFAULT_TIMEOUT_SECS)))
-            .await
+        self.run_internal(
+            cmd,
+            args,
+            env,
+            Some(Duration::from_secs(DEFAULT_TIMEOUT_SECS)),
+        )
+        .await
     }
 
     /// Run a command with full options.

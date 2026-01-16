@@ -7,7 +7,7 @@ use std::collections::HashMap;
 use tracing::{debug, info};
 
 // Notification thresholds
-const WARNING_THRESHOLD: f64 = 80.0;  // Warn at 80% used
+const WARNING_THRESHOLD: f64 = 80.0; // Warn at 80% used
 const CRITICAL_THRESHOLD: f64 = 95.0; // Critical at 95% used
 
 /// Tracks notification state to avoid spamming
@@ -43,7 +43,7 @@ impl NotificationTracker {
         snapshot: &UsageSnapshot,
     ) -> Option<NotificationLevel> {
         let used_percent = snapshot.primary.as_ref()?.used_percent;
-        
+
         let current_level = if used_percent >= CRITICAL_THRESHOLD {
             NotificationLevel::Critical
         } else if used_percent >= WARNING_THRESHOLD {
@@ -52,7 +52,11 @@ impl NotificationTracker {
             NotificationLevel::None
         };
 
-        let last_level = self.last_notified.get(&provider).copied().unwrap_or_default();
+        let last_level = self
+            .last_notified
+            .get(&provider)
+            .copied()
+            .unwrap_or_default();
 
         // Only notify if we've crossed into a higher threshold
         if current_level > last_level {
@@ -84,17 +88,27 @@ impl NotificationTracker {
 }
 
 /// Send a system notification
-pub fn send_quota_notification(provider: ProviderKind, level: NotificationLevel, used_percent: f64) {
+pub fn send_quota_notification(
+    provider: ProviderKind,
+    level: NotificationLevel,
+    used_percent: f64,
+) {
     let provider_name = provider.display_name();
-    
+
     let (title, body) = match level {
         NotificationLevel::Warning => (
             format!("{} Quota Warning", provider_name),
-            format!("You've used {:.0}% of your {} quota.", used_percent, provider_name),
+            format!(
+                "You've used {:.0}% of your {} quota.",
+                used_percent, provider_name
+            ),
         ),
         NotificationLevel::Critical => (
             format!("{} Quota Critical!", provider_name),
-            format!("You've used {:.0}% of your {} quota. Consider slowing down.", used_percent, provider_name),
+            format!(
+                "You've used {:.0}% of your {} quota. Consider slowing down.",
+                used_percent, provider_name
+            ),
         ),
         NotificationLevel::None => return,
     };
@@ -112,20 +126,16 @@ pub fn send_quota_notification(provider: ProviderKind, level: NotificationLevel,
         use std::process::Command;
         // Use osascript for simple notifications
         // Escape quotes in body/title to avoid AppleScript injection
-        let escaped_body = body.replace('"', "\\\"")
-            .replace('\n', " ");
+        let escaped_body = body.replace('"', "\\\"").replace('\n', " ");
         let escaped_title = title.replace('"', "\\\"");
         let script = format!(
             "display notification \"{}\" with title \"{}\"",
-            escaped_body,
-            escaped_title
+            escaped_body, escaped_title
         );
-        
-        let _ = Command::new("osascript")
-            .args(["-e", &script])
-            .spawn();
+
+        let _ = Command::new("osascript").args(["-e", &script]).spawn();
     }
-    
+
     debug!("Notification sent: {} - {}", title, body);
 }
 
@@ -143,18 +153,18 @@ mod tests {
     #[test]
     fn test_warning_notification() {
         let mut tracker = NotificationTracker::new();
-        
+
         // Below warning - no notification
         let snap = make_snapshot(50.0);
         assert!(tracker.should_notify(ProviderKind::Claude, &snap).is_none());
-        
+
         // At warning threshold - should notify
         let snap = make_snapshot(85.0);
         assert_eq!(
             tracker.should_notify(ProviderKind::Claude, &snap),
             Some(NotificationLevel::Warning)
         );
-        
+
         // Still at warning - no duplicate
         let snap = make_snapshot(87.0);
         assert!(tracker.should_notify(ProviderKind::Claude, &snap).is_none());
@@ -163,7 +173,7 @@ mod tests {
     #[test]
     fn test_critical_notification() {
         let mut tracker = NotificationTracker::new();
-        
+
         // Jump straight to critical
         let snap = make_snapshot(96.0);
         assert_eq!(
@@ -175,15 +185,15 @@ mod tests {
     #[test]
     fn test_reset_after_quota_refresh() {
         let mut tracker = NotificationTracker::new();
-        
+
         // Hit critical
         let snap = make_snapshot(96.0);
         assert!(tracker.should_notify(ProviderKind::Claude, &snap).is_some());
-        
+
         // Quota reset - usage drops
         let snap = make_snapshot(10.0);
         assert!(tracker.should_notify(ProviderKind::Claude, &snap).is_none());
-        
+
         // Back to warning - should notify again
         let snap = make_snapshot(85.0);
         assert_eq!(

@@ -1,6 +1,8 @@
 //! MiniMax response parser.
 
-use exactobar_core::{FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow};
+use exactobar_core::{
+    FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
+};
 use exactobar_fetch::FetchError;
 use serde::Deserialize;
 use tracing::debug;
@@ -78,6 +80,7 @@ pub fn parse_minimax_response(json_str: &str) -> Result<UsageSnapshot, FetchErro
 }
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

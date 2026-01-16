@@ -78,22 +78,16 @@ impl Browser {
                     home.join("Library/Cookies/Cookies.binarycookies")
                 }
             }
-            Self::Chrome => home.join(
-                "Library/Application Support/Google/Chrome/Default/Cookies",
-            ),
+            Self::Chrome => home.join("Library/Application Support/Google/Chrome/Default/Cookies"),
             Self::Firefox => {
                 let profiles_dir = home.join("Library/Application Support/Firefox/Profiles");
                 find_firefox_default_profile(&profiles_dir)?.join("cookies.sqlite")
             }
-            Self::Edge => home.join(
-                "Library/Application Support/Microsoft Edge/Default/Cookies",
-            ),
-            Self::Arc => home.join(
-                "Library/Application Support/Arc/User Data/Default/Cookies",
-            ),
-            Self::Brave => home.join(
-                "Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies",
-            ),
+            Self::Edge => home.join("Library/Application Support/Microsoft Edge/Default/Cookies"),
+            Self::Arc => home.join("Library/Application Support/Arc/User Data/Default/Cookies"),
+            Self::Brave => {
+                home.join("Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies")
+            }
         };
 
         Some(path)
@@ -126,10 +120,7 @@ impl Browser {
 
     /// Whether this browser uses encrypted cookies.
     pub fn uses_encrypted_cookies(&self) -> bool {
-        matches!(
-            self,
-            Self::Chrome | Self::Edge | Self::Arc | Self::Brave
-        )
+        matches!(self, Self::Chrome | Self::Edge | Self::Arc | Self::Brave)
     }
 
     /// Returns all browser variants.
@@ -251,9 +242,9 @@ impl BrowserCookieImporter {
     ) -> Result<Vec<Cookie>, BrowserError> {
         debug!("Importing cookies from browser");
 
-        let db_path = browser.cookie_db_path().ok_or_else(|| {
-            BrowserError::BrowserNotFound(browser.display_name().to_string())
-        })?;
+        let db_path = browser
+            .cookie_db_path()
+            .ok_or_else(|| BrowserError::BrowserNotFound(browser.display_name().to_string()))?;
 
         if !db_path.exists() {
             return Err(BrowserError::DatabaseNotFound {
@@ -326,7 +317,7 @@ impl BrowserCookieImporter {
     pub fn cookies_to_header(cookies: &[Cookie]) -> String {
         cookies
             .iter()
-            .map(|c| format!("{}={}", c.name, c.value))  // Can't inline - c.name/c.value
+            .map(|c| format!("{}={}", c.name, c.value)) // Can't inline - c.name/c.value
             .collect::<Vec<_>>()
             .join("; ")
     }
@@ -336,10 +327,7 @@ impl BrowserCookieImporter {
     // ========================================================================
 
     /// Read Safari cookies from `SQLite` database.
-    fn read_safari_cookies(
-        db_path: &PathBuf,
-        domain: &str,
-    ) -> Result<Vec<Cookie>, BrowserError> {
+    fn read_safari_cookies(db_path: &PathBuf, domain: &str) -> Result<Vec<Cookie>, BrowserError> {
         debug!(path = %db_path.display(), "Reading Safari cookies");
 
         // Safari uses binarycookies format on older systems, SQLite on newer
@@ -415,10 +403,7 @@ impl BrowserCookieImporter {
     // ========================================================================
 
     /// Read Firefox cookies from `SQLite` database.
-    fn read_firefox_cookies(
-        db_path: &PathBuf,
-        domain: &str,
-    ) -> Result<Vec<Cookie>, BrowserError> {
+    fn read_firefox_cookies(db_path: &PathBuf, domain: &str) -> Result<Vec<Cookie>, BrowserError> {
         debug!(path = %db_path.display(), "Reading Firefox cookies");
 
         // Firefox locks the database, so copy to temp
@@ -514,7 +499,16 @@ impl BrowserCookieImporter {
                 let is_secure: i32 = row.get(6)?;
                 let is_httponly: i32 = row.get(7)?;
 
-                Ok((name, value, encrypted_value, host_key, path, expires_utc, is_secure, is_httponly))
+                Ok((
+                    name,
+                    value,
+                    encrypted_value,
+                    host_key,
+                    path,
+                    expires_utc,
+                    is_secure,
+                    is_httponly,
+                ))
             })
             .map_err(|e| BrowserError::ReadFailed(format!("Query error: {e}")))?
             .filter_map(Result::ok)
@@ -526,7 +520,9 @@ impl BrowserCookieImporter {
         // Process cookies, attempting decryption if needed
         let mut cookies = Vec::new();
 
-        for (name, value, encrypted_value, host_key, path, expires_utc, is_secure, is_httponly) in cookies_result {
+        for (name, value, encrypted_value, host_key, path, expires_utc, is_secure, is_httponly) in
+            cookies_result
+        {
             // Chromium stores expires as microseconds since Windows epoch (1601-01-01)
             let expires = if expires_utc > 0 {
                 // Convert from Windows epoch microseconds to Unix timestamp
@@ -576,15 +572,11 @@ impl BrowserCookieImporter {
 /// Copy a database file to a temp location to avoid locking issues.
 fn copy_to_temp(source: &PathBuf) -> Result<PathBuf, BrowserError> {
     let temp_dir = std::env::temp_dir();
-    let temp_name = format!(
-        "exactobar_cookies_{}.sqlite",
-        std::process::id()
-    );
+    let temp_name = format!("exactobar_cookies_{}.sqlite", std::process::id());
     let temp_path = temp_dir.join(temp_name);
 
-    fs::copy(source, &temp_path).map_err(|e| {
-        BrowserError::ReadFailed(format!("Failed to copy database: {e}"))
-    })?;
+    fs::copy(source, &temp_path)
+        .map_err(|e| BrowserError::ReadFailed(format!("Failed to copy database: {e}")))?;
 
     Ok(temp_path)
 }
@@ -615,7 +607,11 @@ fn decrypt_chromium_cookie(encrypted: &[u8], browser: Browser) -> Result<String,
         Browser::Edge => "Microsoft Edge Safe Storage",
         Browser::Arc => "Arc Safe Storage",
         Browser::Brave => "Brave Safe Storage",
-        _ => return Err(BrowserError::DecryptionFailed("Not a Chromium browser".to_string())),
+        _ => {
+            return Err(BrowserError::DecryptionFailed(
+                "Not a Chromium browser".to_string(),
+            ));
+        }
     };
 
     // Try to get key from keychain using keyring crate
@@ -800,7 +796,7 @@ mod tests {
     fn test_available_browsers() {
         let importer = BrowserCookieImporter::new();
         let available = importer.available_browsers();
-        println!("Available browsers: {:?}", available);
+        println!("Available browsers: {available:?}");
         // Don't assert anything - depends on system
     }
 

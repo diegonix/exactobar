@@ -3,7 +3,7 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
 use exactobar_providers::ProviderRegistry;
-use exactobar_store::{default_config_dir, default_settings_path, SettingsStore};
+use exactobar_store::{SettingsStore, default_config_dir, default_settings_path};
 use tracing::info;
 
 use crate::output::JsonFormatter;

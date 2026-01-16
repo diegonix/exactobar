@@ -61,7 +61,10 @@ pub struct WindowOutput {
     pub used_percent: f64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub window_minutes: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none", serialize_with = "serialize_datetime_opt")]
+    #[serde(
+        skip_serializing_if = "Option::is_none",
+        serialize_with = "serialize_datetime_opt"
+    )]
     pub resets_at: Option<DateTime<Utc>>,
 }
 
@@ -199,7 +202,10 @@ impl JsonFormatter {
             Ok(snapshot) => {
                 let usage = UsageOutput {
                     primary: snapshot.primary.as_ref().map(|w| self.window_to_output(w)),
-                    secondary: snapshot.secondary.as_ref().map(|w| self.window_to_output(w)),
+                    secondary: snapshot
+                        .secondary
+                        .as_ref()
+                        .map(|w| self.window_to_output(w)),
                     tertiary: snapshot.tertiary.as_ref().map(|w| self.window_to_output(w)),
                     updated_at: snapshot.updated_at,
                     identity: snapshot.identity.as_ref().map(|id| IdentityOutput {
@@ -352,6 +358,7 @@ impl JsonFormatter {
 // ============================================================================
 
 #[cfg(test)]
+#[allow(clippy::float_cmp)]
 mod tests {
     use super::*;
 

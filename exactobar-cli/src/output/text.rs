@@ -52,7 +52,7 @@ impl TextFormatter {
         &self,
         snapshot: &UsageSnapshot,
         desc: Option<&ProviderDescriptor>,
-_show_credits: bool,
+        _show_credits: bool,
     ) -> String {
         let mut lines = Vec::new();
 
@@ -60,11 +60,7 @@ _show_credits: bool,
         let name = desc.map(|d| d.display_name()).unwrap_or("Unknown");
         let source = self.format_source(&snapshot.fetch_source);
 
-        lines.push(format!(
-            "{} ({})",
-            self.bold(name),
-            source
-        ));
+        lines.push(format!("{} ({})", self.bold(name), source));
 
         // Primary window (Session)
         if let Some(primary) = &snapshot.primary {
@@ -173,11 +169,20 @@ _show_credits: bool,
             let reset_date = local_reset.date_naive();
 
             if reset_date == today {
-                format!("today at {}", local_reset.format("%l:%M %p").to_string().trim())
+                format!(
+                    "today at {}",
+                    local_reset.format("%l:%M %p").to_string().trim()
+                )
             } else if reset_date == today + chrono::Days::new(1) {
-                format!("tomorrow at {}", local_reset.format("%l:%M %p").to_string().trim())
+                format!(
+                    "tomorrow at {}",
+                    local_reset.format("%l:%M %p").to_string().trim()
+                )
             } else {
-                format!("{}", local_reset.format("%a at %l:%M %p").to_string().trim())
+                format!(
+                    "{}",
+                    local_reset.format("%a at %l:%M %p").to_string().trim()
+                )
             }
         }
     }
@@ -263,11 +268,7 @@ _show_credits: bool,
             self.dim("−")
         };
 
-        let dashboard = desc
-            .metadata
-            .dashboard_url
-            .as_deref()
-            .unwrap_or("−");
+        let dashboard = desc.metadata.dashboard_url.as_deref().unwrap_or("−");
 
         format!(
             "{:<15} {:<10} {:<10} {:<8} {}",
@@ -280,10 +281,7 @@ _show_credits: bool,
     }
 
     /// Formats a summary of all providers.
-    pub fn format_summary(
-        &self,
-        results: &HashMap<ProviderKind, Option<UsageSnapshot>>,
-    ) -> String {
+    pub fn format_summary(&self, results: &HashMap<ProviderKind, Option<UsageSnapshot>>) -> String {
         let mut lines = Vec::new();
 
         lines.push(self.bold("ExactoBar Summary"));
@@ -317,12 +315,7 @@ _show_credits: bool,
 
     /// Formats an error message.
     pub fn format_error(&self, provider: &str, error: &str) -> String {
-        format!(
-            "{}: {} - {}",
-            self.bold(provider),
-            self.red("Error"),
-            error
-        )
+        format!("{}: {} - {}", self.bold(provider), self.red("Error"), error)
     }
 
     // ========================================================================
@@ -445,7 +438,7 @@ mod tests {
         let formatter = TextFormatter::new(false);
         assert_eq!(formatter.format_number(500.0), "500");
         assert_eq!(formatter.format_number(1500.0), "1.5K");
-        assert_eq!(formatter.format_number(1500000.0), "1.5M");
+        assert_eq!(formatter.format_number(1_500_000.0), "1.5M");
     }
 
     #[test]

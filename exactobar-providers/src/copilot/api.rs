@@ -2,11 +2,10 @@
 //!
 //! This module provides HTTP client functionality for the GitHub Copilot API.
 
-
 use exactobar_core::{
     FetchSource, LoginMethod, ProviderIdentity, ProviderKind, UsageSnapshot, UsageWindow,
 };
-use reqwest::header::{HeaderMap, HeaderValue, ACCEPT, AUTHORIZATION, USER_AGENT};
+use reqwest::header::{ACCEPT, AUTHORIZATION, HeaderMap, HeaderValue, USER_AGENT};
 use serde::Deserialize;
 use tracing::{debug, instrument, warn};
 
@@ -237,7 +236,10 @@ impl CopilotApiClient {
         let mut headers = HeaderMap::new();
 
         headers.insert(USER_AGENT, HeaderValue::from_static(USER_AGENT_VALUE));
-        headers.insert(ACCEPT, HeaderValue::from_static("application/vnd.github+json"));
+        headers.insert(
+            ACCEPT,
+            HeaderValue::from_static("application/vnd.github+json"),
+        );
         headers.insert(
             "X-GitHub-Api-Version",
             HeaderValue::from_static(GITHUB_API_VERSION),
@@ -266,7 +268,9 @@ impl CopilotApiClient {
         let status = response.status();
 
         if status == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(CopilotError::AuthenticationFailed("Token rejected".to_string()));
+            return Err(CopilotError::AuthenticationFailed(
+                "Token rejected".to_string(),
+            ));
         }
 
         if !status.is_success() {
@@ -299,7 +303,9 @@ impl CopilotApiClient {
         }
 
         if status == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(CopilotError::AuthenticationFailed("Token rejected".to_string()));
+            return Err(CopilotError::AuthenticationFailed(
+                "Token rejected".to_string(),
+            ));
         }
 
         if !status.is_success() {
@@ -307,9 +313,8 @@ impl CopilotApiClient {
         }
 
         let body = response.text().await?;
-        let seat: CopilotSeatResponse = serde_json::from_str(&body).map_err(|e| {
-            CopilotError::InvalidResponse(format!("JSON error: {}", e))
-        })?;
+        let seat: CopilotSeatResponse = serde_json::from_str(&body)
+            .map_err(|e| CopilotError::InvalidResponse(format!("JSON error: {}", e)))?;
 
         Ok(seat)
     }

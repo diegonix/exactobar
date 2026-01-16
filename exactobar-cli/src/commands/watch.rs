@@ -6,12 +6,12 @@ use exactobar_core::{ProviderKind, UsageSnapshot};
 use exactobar_fetch::{FetchContext, SourceMode};
 use exactobar_providers::ProviderRegistry;
 use std::collections::HashMap;
-use std::io::{stdout, Write};
+use std::io::{Write, stdout};
 use tokio::time::{Duration, interval};
 use tracing::info;
 
-use crate::output::TextFormatter;
 use crate::Cli;
+use crate::output::TextFormatter;
 
 /// Arguments for watch command.
 #[derive(Args)]

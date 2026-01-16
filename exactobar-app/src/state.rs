@@ -38,7 +38,7 @@ fn tokio_runtime() -> &'static tokio::runtime::Runtime {
             .build()
             .expect(
                 "Failed to create Tokio runtime for save operations. \
-                This is unrecoverable - settings cannot be persisted."
+                This is unrecoverable - settings cannot be persisted.",
             )
     })
 }
@@ -175,7 +175,11 @@ impl SettingsModel {
 
     /// Gets enabled providers.
     pub fn enabled_providers(&self) -> Vec<ProviderKind> {
-        self.cached_settings.enabled_providers.iter().copied().collect()
+        self.cached_settings
+            .enabled_providers
+            .iter()
+            .copied()
+            .collect()
     }
 
     /// Checks if a provider is enabled.
@@ -280,6 +284,11 @@ impl SettingsModel {
     pub fn set_cost_usage_enabled(&mut self, value: bool) {
         self.cached_settings.cost_usage_enabled = value;
         self.save_async();
+    }
+
+    /// Gets whether random blink animation is enabled.
+    pub fn random_blink_enabled(&self) -> bool {
+        self.cached_settings.random_blink_enabled
     }
 
     /// Sets whether random blink animation is enabled.

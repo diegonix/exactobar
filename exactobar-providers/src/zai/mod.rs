@@ -13,8 +13,8 @@ mod strategies;
 mod token_store;
 
 pub use api::{ZaiApiClient, ZaiUsageResponse};
-pub use token_store::ZaiTokenStore;
 pub use descriptor::zai_descriptor;
 pub use error::ZaiError;
 pub use fetcher::ZaiUsageFetcher;
 pub use strategies::ZaiApiStrategy;
+pub use token_store::ZaiTokenStore;

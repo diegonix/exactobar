@@ -100,9 +100,7 @@ impl VertexAICredentials {
 
     /// Check if credentials have all required OAuth fields.
     pub fn has_oauth(&self) -> bool {
-        self.client_id.is_some()
-            && self.client_secret.is_some()
-            && self.refresh_token.is_some()
+        self.client_id.is_some() && self.client_secret.is_some() && self.refresh_token.is_some()
     }
 
     /// Get the project ID if available.
@@ -151,10 +149,7 @@ impl VertexAITokenRefresher {
     /// Refresh an access token using the credentials' refresh token.
     #[instrument(skip(self, creds))]
     pub async fn refresh(&self, creds: &VertexAICredentials) -> Result<String, VertexAIError> {
-        let client_id = creds
-            .client_id
-            .as_ref()
-            .ok_or(VertexAIError::NotLoggedIn)?;
+        let client_id = creds.client_id.as_ref().ok_or(VertexAIError::NotLoggedIn)?;
 
         let client_secret = creds
             .client_secret
@@ -214,7 +209,6 @@ impl Default for VertexAITokenRefresher {
     }
 }
 
-
 // ============================================================================
 // Tests
 // ============================================================================
@@ -269,7 +263,10 @@ mod tests {
         }"#;
 
         let creds: VertexAICredentials = serde_json::from_str(json).unwrap();
-        assert_eq!(creds.client_id, Some("123.apps.googleusercontent.com".to_string()));
+        assert_eq!(
+            creds.client_id,
+            Some("123.apps.googleusercontent.com".to_string())
+        );
         assert_eq!(creds.credential_type, Some("authorized_user".to_string()));
         assert_eq!(creds.project_id(), Some("my-project"));
         assert!(creds.has_oauth());
@@ -281,5 +278,4 @@ mod tests {
         // Just verify it doesn't panic
         drop(refresher);
     }
-
 }

@@ -193,6 +193,11 @@ impl ClaudeUsageFetcher {
         let response = client.fetch_usage(&credentials).await?;
         let snapshot = response.to_snapshot();
 
+        debug!(
+            "OAuth snapshot: primary={:?}, secondary={:?}, tertiary={:?}",
+            snapshot.primary, snapshot.secondary, snapshot.tertiary
+        );
+
         Ok(snapshot)
     }
 

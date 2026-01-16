@@ -10,13 +10,13 @@ use async_trait::async_trait;
 #[allow(unused_imports)]
 use exactobar_core::{FetchSource, UsageSnapshot};
 use exactobar_fetch::{
-    host::browser::Browser, FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy,
+    FetchContext, FetchError, FetchKind, FetchResult, FetchStrategy, host::browser::Browser,
 };
 use std::path::PathBuf;
 use tracing::{debug, info, instrument};
 
 use super::parser::parse_minimax_response;
-use super::web::{MiniMaxLocalStorage, MiniMaxWebClient, HAILUOAI_DOMAIN, MINIMAX_DOMAIN};
+use super::web::{HAILUOAI_DOMAIN, MINIMAX_DOMAIN, MiniMaxLocalStorage, MiniMaxWebClient};
 
 const MINIMAX_API: &str = "https://api.minimax.chat/v1/usage";
 const HAILUOAI_API: &str = "https://hailuoai.com/api/user/usage";
@@ -88,7 +88,9 @@ impl FetchStrategy for MiniMaxWebStrategy {
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         if response.status() == reqwest::StatusCode::UNAUTHORIZED {
-            return Err(FetchError::AuthenticationFailed("Cookies rejected".to_string()));
+            return Err(FetchError::AuthenticationFailed(
+                "Cookies rejected".to_string(),
+            ));
         }
 
         if !response.status().is_success() {
@@ -98,7 +100,9 @@ impl FetchStrategy for MiniMaxWebStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_minimax_response(&body)?;
@@ -193,7 +197,9 @@ impl FetchStrategy for HailuoaiWebStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_minimax_response(&body)?;
@@ -247,10 +253,9 @@ impl FetchStrategy for MiniMaxLocalStorageStrategy {
     async fn fetch(&self, ctx: &FetchContext) -> Result<FetchResult, FetchError> {
         debug!("Fetching MiniMax usage via localStorage token");
 
-        let token = MiniMaxLocalStorage::find_token()
-            .ok_or_else(|| FetchError::AuthenticationFailed(
-                "No MiniMax token found in localStorage".to_string(),
-            ))?;
+        let token = MiniMaxLocalStorage::find_token().ok_or_else(|| {
+            FetchError::AuthenticationFailed("No MiniMax token found in localStorage".to_string())
+        })?;
 
         // Use the token with the API
         let auth_header = format!("Bearer {}", token);
@@ -273,7 +278,9 @@ impl FetchStrategy for MiniMaxLocalStorageStrategy {
             )));
         }
 
-        let body = response.text().await
+        let body = response
+            .text()
+            .await
             .map_err(|e| FetchError::InvalidResponse(e.to_string()))?;
 
         let snapshot = parse_minimax_response(&body)?;

@@ -4,8 +4,10 @@ use exactobar_core::{IconStyle, ProviderBranding, ProviderColor, ProviderKind, P
 use exactobar_fetch::{FetchContext, FetchPipeline, SourceMode};
 use std::path::PathBuf;
 
+use super::strategies::{
+    ClaudeCliStrategy, ClaudeOAuthStrategy, ClaudePtyStrategy, ClaudeWebStrategy,
+};
 use crate::descriptor::{CliConfig, FetchPlan, ProviderDescriptor, TokenCostConfig};
-use super::strategies::{ClaudeCliStrategy, ClaudeOAuthStrategy, ClaudePtyStrategy, ClaudeWebStrategy};
 
 /// Creates the Claude provider descriptor.
 pub fn claude_descriptor() -> ProviderDescriptor {

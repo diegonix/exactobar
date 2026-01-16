@@ -9,7 +9,7 @@ mod fetcher;
 pub(crate) mod parser;
 mod strategies;
 
-pub use cli::{detect_version, ensure_logged_in, KiroCliClient, KiroUsage};
+pub use cli::{KiroCliClient, KiroUsage, detect_version, ensure_logged_in};
 pub use descriptor::kiro_descriptor;
 pub use error::KiroError;
 pub use fetcher::KiroUsageFetcher;

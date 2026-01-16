@@ -18,10 +18,7 @@ use super::error::KiroError;
 
 /// Detect kiro-cli version.
 pub fn detect_version() -> Option<String> {
-    let output = Command::new("kiro-cli")
-        .args(["--version"])
-        .output()
-        .ok()?;
+    let output = Command::new("kiro-cli").args(["--version"]).output().ok()?;
 
     if !output.status.success() {
         return None;
@@ -71,7 +68,9 @@ pub async fn ensure_logged_in() -> Result<(), KiroError> {
     }
 
     if combined.trim().is_empty() {
-        return Err(KiroError::CliFailed("whoami returned empty output".to_string()));
+        return Err(KiroError::CliFailed(
+            "whoami returned empty output".to_string(),
+        ));
     }
 
     debug!(output = %combined.trim(), "Kiro login check passed");
@@ -88,9 +87,8 @@ static CREDITS_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 /// Pattern for percentage: "50%" or "50% used"
-static PERCENT_RE: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"(\d+(?:\.\d+)?)\s*%").expect("Invalid regex")
-});
+static PERCENT_RE: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(\d+(?:\.\d+)?)\s*%").expect("Invalid regex"));
 
 /// Pattern for email.
 static EMAIL_RE: LazyLock<Regex> = LazyLock::new(|| {
@@ -123,8 +121,7 @@ pub struct KiroUsage {
 impl KiroUsage {
     /// Check if we have data.
     pub fn has_data(&self) -> bool {
-        self.credits_used.is_some()
-            || self.used_percent.is_some()
+        self.credits_used.is_some() || self.used_percent.is_some()
     }
 
     /// Get usage percentage.

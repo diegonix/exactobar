@@ -2,14 +2,18 @@
 //!
 //! These tests verify parser behavior with malformed, partial, or edge case inputs.
 
+#![allow(clippy::float_cmp)]
+
 #[cfg(test)]
 mod claude_parser_edge_tests {
-    use crate::claude::parser::{parse_claude_api_response, parse_claude_cli_output, parse_text_usage_line};
-    
+    use crate::claude::parser::{
+        parse_claude_api_response, parse_claude_cli_output, parse_text_usage_line,
+    };
+
     // ========================================================================
     // JSON Edge Cases
     // ========================================================================
-    
+
     #[test]
     fn test_parse_empty_json_object() {
         let json = r#"{}"#;
@@ -18,7 +22,7 @@ mod claude_parser_edge_tests {
         let snapshot = result.unwrap();
         assert!(snapshot.primary.is_none());
     }
-    
+
     #[test]
     fn test_parse_null_values() {
         let json = r#"{
@@ -31,7 +35,7 @@ mod claude_parser_edge_tests {
         let result = parse_claude_api_response(json);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_usage_with_all_aliases() {
         // Test that all field aliases work
@@ -49,25 +53,25 @@ mod claude_parser_edge_tests {
         let snapshot = result.unwrap();
         assert!(snapshot.primary.is_some());
     }
-    
+
     #[test]
     fn test_parse_percentage_boundary_values() {
         // Test 0%
         let json = r#"{"session": {"used_percent": 0.0}}"#;
         let result = parse_claude_api_response(json).unwrap();
         assert_eq!(result.primary.as_ref().unwrap().used_percent, 0.0);
-        
+
         // Test 100%
         let json = r#"{"session": {"used_percent": 100.0}}"#;
         let result = parse_claude_api_response(json).unwrap();
         assert_eq!(result.primary.as_ref().unwrap().used_percent, 100.0);
-        
+
         // Test over 100% (should still parse)
         let json = r#"{"session": {"used_percent": 150.0}}"#;
         let result = parse_claude_api_response(json).unwrap();
         assert_eq!(result.primary.as_ref().unwrap().used_percent, 150.0);
     }
-    
+
     #[test]
     fn test_parse_remaining_to_used_conversion() {
         // When only remaining is provided, used should be calculated as 100 - remaining
@@ -75,7 +79,7 @@ mod claude_parser_edge_tests {
         let result = parse_claude_api_response(json).unwrap();
         assert_eq!(result.primary.as_ref().unwrap().used_percent, 75.0);
     }
-    
+
     #[test]
     fn test_parse_invalid_reset_timestamp() {
         // Invalid timestamp should not cause failure, just skip parsing
@@ -90,7 +94,7 @@ mod claude_parser_edge_tests {
         let snapshot = result.unwrap();
         assert!(snapshot.primary.as_ref().unwrap().resets_at.is_none());
     }
-    
+
     #[test]
     fn test_parse_malformed_json() {
         let malformed_cases = vec![
@@ -102,7 +106,7 @@ mod claude_parser_edge_tests {
             "",
             "null",
         ];
-        
+
         for json in malformed_cases {
             let result = parse_claude_api_response(json);
             // Empty string and "null" might parse differently
@@ -111,11 +115,11 @@ mod claude_parser_edge_tests {
             }
         }
     }
-    
+
     // ========================================================================
     // CLI Text Output Edge Cases
     // ========================================================================
-    
+
     #[test]
     fn test_parse_cli_empty_output() {
         let output = "";
@@ -124,14 +128,14 @@ mod claude_parser_edge_tests {
         let snapshot = result.unwrap();
         assert!(snapshot.primary.is_none());
     }
-    
+
     #[test]
     fn test_parse_cli_whitespace_only() {
         let output = "   \n\t\n   ";
         let result = parse_claude_cli_output(output, false);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_cli_case_sensitivity() {
         // Only exact prefix match should work
@@ -143,40 +147,46 @@ mod claude_parser_edge_tests {
         assert!(snapshot.primary.is_some());
         assert_eq!(snapshot.primary.as_ref().unwrap().used_percent, 70.0);
     }
-    
+
     #[test]
     fn test_parse_text_usage_line_edge_cases() {
         // Fractional percentage
-        assert_eq!(parse_text_usage_line("45.5% used").unwrap().used_percent, 45.5);
-        
+        assert_eq!(
+            parse_text_usage_line("45.5% used").unwrap().used_percent,
+            45.5
+        );
+
         // Percentage at boundary
         assert_eq!(parse_text_usage_line("0% used").unwrap().used_percent, 0.0);
-        assert_eq!(parse_text_usage_line("100% used").unwrap().used_percent, 100.0);
-        
+        assert_eq!(
+            parse_text_usage_line("100% used").unwrap().used_percent,
+            100.0
+        );
+
         // With various parenthetical content
         let window = parse_text_usage_line("50% used (resets in 30m)").unwrap();
         assert_eq!(window.reset_description, Some("in 30m".to_string()));
-        
+
         // Without "resets" prefix
         let window = parse_text_usage_line("50% used (Sunday)").unwrap();
         assert_eq!(window.reset_description, Some("Sunday".to_string()));
-        
+
         // Empty parentheses
         let window = parse_text_usage_line("50% used ()").unwrap();
-        assert_eq!(window.reset_description, Some("".to_string()));
+        assert_eq!(window.reset_description, Some(String::new()));
     }
-    
+
     #[test]
     fn test_parse_text_usage_line_invalid() {
         // No percentage sign
         assert!(parse_text_usage_line("50 used").is_none());
-        
+
         // No number before %
         assert!(parse_text_usage_line("% used").is_none());
-        
+
         // Invalid number
         assert!(parse_text_usage_line("abc% used").is_none());
-        
+
         // Empty string
         assert!(parse_text_usage_line("").is_none());
     }
@@ -185,7 +195,7 @@ mod claude_parser_edge_tests {
 #[cfg(test)]
 mod cursor_parser_edge_tests {
     use crate::cursor::parser::{parse_cursor_api_response, parse_cursor_local_config};
-    
+
     #[test]
     fn test_parse_zero_limits() {
         // Edge case: limit is 0 (should not cause division by zero)
@@ -201,7 +211,7 @@ mod cursor_parser_edge_tests {
         // Should handle gracefully (0% when limit is 0)
         assert_eq!(snapshot.primary.as_ref().unwrap().used_percent, 0.0);
     }
-    
+
     #[test]
     fn test_parse_usage_exceeds_limit() {
         // Usage exceeds limit (>100%)
@@ -216,7 +226,7 @@ mod cursor_parser_edge_tests {
         let snapshot = result.unwrap();
         assert_eq!(snapshot.primary.as_ref().unwrap().used_percent, 200.0);
     }
-    
+
     #[test]
     fn test_parse_with_camel_case_aliases() {
         // Test camelCase variants
@@ -236,7 +246,7 @@ mod cursor_parser_edge_tests {
         let result = parse_cursor_api_response(json);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_local_config_minimal() {
         let json = r#"{}"#;
@@ -248,7 +258,7 @@ mod cursor_parser_edge_tests {
 #[cfg(test)]
 mod codex_parser_edge_tests {
     use crate::codex::parser::parse_codex_cli_output;
-    
+
     #[test]
     fn test_parse_with_timestamps() {
         let json = r#"{
@@ -263,7 +273,7 @@ mod codex_parser_edge_tests {
         let snapshot = result.unwrap();
         assert!(snapshot.primary.as_ref().unwrap().resets_at.is_some());
     }
-    
+
     #[test]
     fn test_parse_with_credits() {
         let json = r#"{
@@ -277,7 +287,7 @@ mod codex_parser_edge_tests {
         let result = parse_codex_cli_output(json);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_organization_alias() {
         let json = r#"{
@@ -300,14 +310,14 @@ mod codex_parser_edge_tests {
 #[cfg(test)]
 mod gemini_parser_edge_tests {
     use crate::gemini::parser::parse_gemini_response;
-    
+
     #[test]
     fn test_parse_gemini_minimal() {
         let json = r#"{}"#;
         let result = parse_gemini_response(json);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_gemini_with_quota() {
         let json = r#"{
@@ -324,7 +334,7 @@ mod gemini_parser_edge_tests {
 #[cfg(test)]
 mod factory_parser_edge_tests {
     use crate::factory::parser::parse_factory_response;
-    
+
     #[test]
     fn test_parse_factory_minimal() {
         let json = r#"{}"#;
@@ -336,14 +346,14 @@ mod factory_parser_edge_tests {
 #[cfg(test)]
 mod copilot_parser_edge_tests {
     use crate::copilot::parser::parse_copilot_response;
-    
+
     #[test]
     fn test_parse_copilot_minimal() {
         let json = r#"{}"#;
         let result = parse_copilot_response(json);
         assert!(result.is_ok());
     }
-    
+
     #[test]
     fn test_parse_copilot_with_seat_info() {
         let json = r#"{
@@ -360,7 +370,7 @@ mod copilot_parser_edge_tests {
 #[cfg(test)]
 mod augment_parser_edge_tests {
     use crate::augment::parser::parse_augment_response;
-    
+
     #[test]
     fn test_parse_augment_with_usage() {
         let json = r#"{
@@ -377,7 +387,7 @@ mod augment_parser_edge_tests {
 #[cfg(test)]
 mod minimax_parser_edge_tests {
     use crate::minimax::parser::parse_minimax_response;
-    
+
     #[test]
     fn test_parse_minimax_with_balance() {
         let json = r#"{
@@ -394,7 +404,7 @@ mod minimax_parser_edge_tests {
 #[cfg(test)]
 mod zai_parser_edge_tests {
     use crate::zai::parser::parse_zai_response;
-    
+
     #[test]
     fn test_parse_zai_minimal() {
         let json = r#"{}"#;
@@ -406,7 +416,7 @@ mod zai_parser_edge_tests {
 #[cfg(test)]
 mod kiro_parser_edge_tests {
     use crate::kiro::parser::parse_kiro_response;
-    
+
     #[test]
     fn test_parse_kiro_minimal() {
         let json = r#"{}"#;
@@ -418,7 +428,7 @@ mod kiro_parser_edge_tests {
 #[cfg(test)]
 mod vertexai_parser_edge_tests {
     use crate::vertexai::parser::parse_vertexai_response;
-    
+
     #[test]
     fn test_parse_vertexai_minimal() {
         let json = r#"{}"#;
@@ -438,22 +448,22 @@ mod antigravity_parser_edge_tests {
 
 #[cfg(test)]
 mod cross_parser_tests {
-    use exactobar_core::{UsageSnapshot, FetchSource};
-    
+    use exactobar_core::{FetchSource, UsageSnapshot};
+
     #[test]
     fn test_all_parsers_return_valid_fetch_source() {
         // Verify that all parsers set a meaningful fetch_source
         let snapshot = UsageSnapshot::new();
-        
+
         // Default should be Auto
         assert_eq!(snapshot.fetch_source, FetchSource::Auto);
     }
-    
+
     #[test]
     fn test_empty_snapshot_behavior_consistency() {
         // All empty snapshots should behave the same
         let snapshot = UsageSnapshot::new();
-        
+
         assert!(!snapshot.has_data());
         assert!(!snapshot.is_approaching_limit());
         assert_eq!(snapshot.max_usage_percent(), 0.0);

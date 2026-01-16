@@ -41,6 +41,8 @@ pub enum ProviderKind {
     Antigravity,
     /// `MiniMax`
     MiniMax,
+    /// Synthetic.new
+    Synthetic,
 }
 
 impl ProviderKind {
@@ -59,6 +61,7 @@ impl ProviderKind {
             Self::Kiro => "Kiro",
             Self::Antigravity => "Antigravity",
             Self::MiniMax => "MiniMax",
+            Self::Synthetic => "Synthetic.new",
         }
     }
 
@@ -77,6 +80,7 @@ impl ProviderKind {
             Self::Kiro,
             Self::Antigravity,
             Self::MiniMax,
+            Self::Synthetic,
         ]
     }
 
@@ -95,6 +99,7 @@ impl ProviderKind {
             Self::Kiro => "kiro",
             Self::Antigravity => "antigravity",
             Self::MiniMax => "minimax",
+            Self::Synthetic => "synthetic",
         }
     }
 
@@ -102,10 +107,7 @@ impl ProviderKind {
     ///
     /// Useful for compact serialization, e.g., storing in Objective-C ivars.
     pub fn to_index(self) -> usize {
-        Self::all()
-            .iter()
-            .position(|&p| p == self)
-            .unwrap_or(0)
+        Self::all().iter().position(|&p| p == self).unwrap_or(0)
     }
 
     /// Creates a provider from an index (position in the `all()` array).
@@ -150,7 +152,9 @@ impl Provider {
 
     /// Returns the effective display name.
     pub fn effective_display_name(&self) -> &str {
-        self.display_name.as_deref().unwrap_or(self.kind.display_name())
+        self.display_name
+            .as_deref()
+            .unwrap_or(self.kind.display_name())
     }
 }
 
@@ -322,6 +326,7 @@ impl ProviderBranding {
                 (IconStyle::Antigravity, ProviderColor::new(0.2, 0.8, 0.8))
             }
             ProviderKind::MiniMax => (IconStyle::MiniMax, ProviderColor::new(0.9, 0.1, 0.3)),
+            ProviderKind::Synthetic => (IconStyle::Synthetic, ProviderColor::new(0.0, 0.8, 0.7)),
         };
 
         Self {
@@ -401,6 +406,8 @@ pub enum IconStyle {
     Antigravity,
     /// `MiniMax` icon.
     MiniMax,
+    /// Synthetic.new icon.
+    Synthetic,
     /// Combined/aggregate view icon.
     Combined,
 }
